@@ -28,15 +28,15 @@
 // Login fonksiyonu
 async function loginWithClickUp() {
     try {
-        console.log('[Auth] Requesting OAuth URL from Cloudflare Workers...');
-        const res = await fetch('https://tagmanager-api.izzetjmy.workers.dev/login/clickup');
-        const data = await res.json();
-        console.log('[Auth] OAuth URL:', data);
-        if (data && data.url) {
-            window.location.href = data.url;
-        } else {
-            console.error('[Auth] Backend did not return OAuth URL');
-        }
+        console.log('[Auth] Creating OAuth URL directly...');
+        // Frontend'de OAuth URL oluştur (Cloudflare challenge'ı geçmek için)
+        const CLICKUP_CLIENT_ID = 'E5Y5P88KKK742V28R31AR7EIWR3J0CWU';
+        const CLICKUP_REDIRECT_URI = 'https://tagmanager.softfixes.com/';
+        
+        const oauthUrl = `https://app.clickup.com/api?client_id=${encodeURIComponent(CLICKUP_CLIENT_ID)}&redirect_uri=${encodeURIComponent(CLICKUP_REDIRECT_URI)}`;
+        
+        console.log('[Auth] OAuth URL:', oauthUrl);
+        window.location.href = oauthUrl;
     } catch (e) {
         console.error('[Auth] Failed to get OAuth URL:', e);
     }
