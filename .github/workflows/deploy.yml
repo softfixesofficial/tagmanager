@@ -25,20 +25,25 @@ jobs:
           node-version: 20
           cache: 'npm'
 
-      - run: cd tagmanager/landing
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build landing page
+        run: cd landing && npm run build
 
       # SPA yönlendirme için 404.html oluştur
-      - run: cp build/index.html build/404.html
+      - name: Create 404.html for SPA routing
+        run: cp landing/build/index.html landing/build/404.html
 
       # Custom domain ayarla
-      - name: run: echo "tagmanager.softfixes.com" > build/CNAME
+      - name: Set custom domain
+        run: echo "tagmanager.softfixes.com" > landing/build/CNAME
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: tagmanager/landing/build
+          path: landing/build
 
   deploy:
     needs: build

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClickUp Tag Manager</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/tag-details.css">
+</head>
+<body>
+    <!-- Login Section (shown when not authenticated) -->
+    <div id="login-section" class="login-container" style="display: none;">
+        <div class="login-card">
+            <img src="/images/click-up-logo.png" alt="ClickUp Logo" class="logo">
+            <div class="login-actions">
+                <button class="btn btn-provider clickup" onclick="loginWithClickUp()">Continue with ClickUp</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tag Manager Section (shown when authenticated) -->
+    <div id="tag-manager-section" class="tag-manager" style="display: none;">
+        <!-- Header -->
+        <div class="tag-manager-header">
+            <h2>Tag Manager</h2>
+            <div class="header-actions">
+                <span id="user-name">Loading...</span>
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </div>
+        </div>
+        
+        <!-- Main Content Grid -->
+        <div class="tag-manager-grid" style="grid-template-columns: 1fr 2fr; grid-template-rows: auto;">
+            <!-- Left: Active Tags Panel -->
+            <section class="panel panel-search-active">
+                <div class="panel-title">Tags</div>
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Search tags..." class="search-input">
+                    <button class="btn-icon" id="filter-btn" onclick="toggleFilterPanel()">▼</button>
+                </div>
+                
+                <!-- Filter Panel -->
+                <div class="filter-panel" id="filter-panel" style="display: none;">
+                    <div class="filter-section">
+                        <label>By group:</label>
+                        <select id="group-filter">
+                            <option value="all">All</option>
+                            <!-- Dynamic group options will be added here -->
+                        </select>
+                    </div>
+                    <div class="filter-section">
+                        <label>By color:</label>
+                        <div class="color-filter-container">
+                            <div class="color-filter-display" id="color-filter-display">
+                                <span class="color-dot" id="selected-color-dot" style="background-color: transparent;"></span>
+                                <span id="selected-color-text">All Colors</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            <div class="color-filter-dropdown" id="color-filter-dropdown" style="display: none;">
+                                <div class="color-option" data-color="all">
+                                    <span class="color-dot" style="background: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 10px 10px; background-position: 0 0, 0 5px, 5px -5px, -5px 0px;"></span>
+                                    <span>All Colors</span>
+                                </div>
+                                <!-- Dynamic color options will be added here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="filter-actions">
+                        <button class="btn btn-primary" id="apply-filter">Filter</button>
+                        <button class="btn btn-secondary" id="clear-filter">Clear</button>
+                    </div>
+                </div>
+                
+                <div class="tags-filter">
+                    <!-- Loading Indicator -->
+                    <div class="loading-container" id="loading-container">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">Loading tags...</div>
+                    </div>
+                    
+                    <div class="all-tags-toggle" id="all-tags-toggle" style="display: none;">
+                        <span class="all-label">All</span>
+                        <span class="toggle-arrow">▼</span>
+                        <button class="btn-add-group" id="add-group-btn">
+                            <span class="plus-icon">+</span>
+                        </button>
+                    </div>
+                    <div class="all-tags-list" id="all-tags-list" style="display: none;">
+                        <!-- All tags will be loaded here -->
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Right: Details + Data -->
+            <section class="panel panel-right-stack" style="display: flex; flex-direction: column; gap: 1.2rem; background: none; box-shadow: none; border: none; padding: 0;">
+                <!-- Tag Details Panel -->
+                <div class="panel panel-details-mini" id="tag-details-panel">
+                    <div class="panel-title">Tag Details</div>
+                    <div id="tag-details" class="tag-details">
+                        <div class="no-selection-message">Select a tag</div>
+                    </div>
+                </div>
+                
+                <!-- Data Panel -->
+                <div class="panel panel-fake-data" id="data-panel">
+                    <div class="panel-title">Data</div>
+                    <div class="data-subtitle">Related Tasks</div>
+                    <div id="tagged-items">
+                        <!-- Tagged items will be loaded here -->
+                    </div>
+                </div>
+                
+
+            </section>
+        </div>
+    </div>
+    
+    <script src="/js/drag-drop.js"></script>
+    
+    <script src="/js/main.js"></script>
+</body>
+</html> 
