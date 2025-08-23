@@ -1,0 +1,15 @@
+{
+  "name": "tag-manager",
+  "version": "1.0.0",
+  "description": "A flexible tag management tool",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "mkdir -p build && cp -r public/* build/ && cp public/index.html build/404.html"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2"
+  }
+}

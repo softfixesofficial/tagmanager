@@ -1,0 +1,49 @@
+{
+  "name": "tagmanager",
+  "version": "1.0.0",
+  "description": "Tag Manager - Streamline your tag management across multiple applications",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:landing\"",
+    "dev:api": "cd api && npm run dev",
+    "dev:landing": "cd landing && npm run dev",
+    "dev:docs": "cd docs && npm run dev",
+    "build": "npm run build:api && npm run build:landing && npm run build:docs",
+    "build:api": "cd api && npm run build",
+    "build:landing": "cd landing && npm run build",
+    "build:docs": "cd docs && npm run build",
+    "test": "npm run test:api",
+    "test:api": "cd api && npm test",
+    "install:all": "npm install && cd api && npm install && cd landing && npm install && cd docs && npm install",
+    "clean": "rm -rf api/node_modules landing/node_modules docs/node_modules",
+    "lint": "npm run lint:api && npm run lint:landing",
+    "lint:api": "cd api && npm run lint",
+    "lint:landing": "cd landing && npm run lint"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "workspaces": [
+    "api", 
+    "landing",
+    "docs"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/softfixes/tagmanager.git"
+  },
+  "keywords": [
+    "tag-manager",
+    "sso",
+    "multi-application",
+    "tags",
+    "management",
+    "dashboard"
+  ],
+  "author": "SoftFixes Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  }
+} 
