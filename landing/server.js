@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -45,9 +46,9 @@ app.post('/api/clickup/token', express.json(), async (req, res) => {
     }
 
     try {
-        const CLICKUP_CLIENT_ID = process.env.CLICKUP_CLIENT_ID || '3REXUS5RQOIFP2XIV6GF01KXT8FBNQ3X';
-        const CLICKUP_CLIENT_SECRET = process.env.CLICKUP_CLIENT_SECRET || 'F2U1RBLUZ7KO146YZ5J5JIWFZV79VWHLORSGXTKTCG0Y86YOPLX0D4A33V5V5U8X';
-        const CLICKUP_REDIRECT_URI = process.env.CLICKUP_REDIRECT_URI || 'http://localhost:4000/';
+        const CLICKUP_CLIENT_ID = process.env.CLICKUP_CLIENT_ID;
+        const CLICKUP_CLIENT_SECRET = process.env.CLICKUP_CLIENT_SECRET;
+        const CLICKUP_REDIRECT_URI = process.env.CLICKUP_REDIRECT_URI;
 
         const response = await fetch('https://api.clickup.com/api/v2/oauth/token', {
             method: 'POST',
