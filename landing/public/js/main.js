@@ -28,8 +28,8 @@
 // Login fonksiyonu
 async function loginWithClickUp() {
     try {
-        console.log('[Auth] Requesting OAuth URL from backend...');
-        const res = await fetch('/login/clickup');
+        console.log('[Auth] Requesting OAuth URL from Cloudflare Workers...');
+        const res = await fetch('https://tagmanager-api.izzetjmy.workers.dev/login/clickup');
         const data = await res.json();
         console.log('[Auth] OAuth URL:', data);
         if (data && data.url) {
@@ -125,7 +125,7 @@ class ClickUpTagManager {
         const teamId = null; // null olarak bırak, backend otomatik olarak ilk team'i kullanacak
         try {
             console.log('[TM] Fetching tags from backend...', { hasToken: !!token, teamId });
-            const res = await fetch(`http://localhost:4000/api/clickup/tags?token=${token}${teamId ? `&teamId=${teamId}` : ''}`);
+            const res = await fetch(`https://tagmanager-api.izzetjmy.workers.dev/api/clickup/tags?token=${token}${teamId ? `&teamId=${teamId}` : ''}`);
             console.log('[TM] /api/clickup/tags response ok =', res.ok, 'status =', res.status);
             if (!res.ok) {
                 this.hideLoading();

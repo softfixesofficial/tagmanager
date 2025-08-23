@@ -1,0 +1,16 @@
+name = "tagmanager-api"
+main = "api/worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+CLICKUP_CLIENT_ID = "E5Y5P88KKK742V28R31AR7EIWR3J0CWU"
+CLICKUP_REDIRECT_URI = "https://tagmanager.softfixes.com/"
+
+# Routes - mevcut domain'i kullan
+routes = [
+  "tagmanager.softfixes.com/api/*",
+  "tagmanager.softfixes.com/login/*"
+]
+
+# Environment variables (secrets)
+# wrangler secret put CLICKUP_CLIENT_SECRET
