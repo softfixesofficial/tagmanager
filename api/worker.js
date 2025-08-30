@@ -121,7 +121,7 @@ export default {
           });
         }
 
-        // Get spaces for the team
+        // Get spaces for the team (routes.js'deki aynı mantık)
         const spacesResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
           headers: { 'Authorization': token }
         });
@@ -129,9 +129,63 @@ export default {
         
         let allTags = [];
         
-        // Extract tags from tasks in all spaces
+        // Extract tags from tasks - routes.js'deki tam implementasyon
         for (const space of spacesData.spaces || []) {
-          // Get space lists
+          // Get folders in space
+          const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
+            headers: { 'Authorization': token }
+          });
+          const foldersData = await foldersResponse.json();
+          
+          // Process folders
+          for (const folder of foldersData.folders || []) {
+            const listsResponse = await fetch(`https://api.clickup.com/api/v2/folder/${folder.id}/list`, {
+              headers: { 'Authorization': token }
+            });
+            const listsData = await listsResponse.json();
+            
+            for (const list of listsData.lists || []) {
+              const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                headers: { 'Authorization': token }
+              });
+              const tasksData = await tasksResponse.json();
+              
+              for (const task of tasksData.tasks || []) {
+                if (task.tags && task.tags.length > 0) {
+                  for (const tag of task.tags) {
+                    const tagId = tag.name;
+                    const existingTag = allTags.find(t => t.id === tagId);
+                    if (!existingTag) {
+                      const tagData = {
+                        ...tag,
+                        id: tagId,
+                        list_id: list.id,
+                        space_id: space.id,
+                        folder_id: folder.id,
+                        creator_id: task.creator?.id || null,
+                        creator_name: task.creator?.username || null,
+                        created_date: task.date_created,
+                        task_count: 1,
+                        workspace_id: task.workspace_id || null,
+                        chain_id: task.chain_id || null,
+                        userid: task.userid || null,
+                        dependencies: task.dependencies || [],
+                        assignees: task.assignees || [],
+                        priority: task.priority || 'Normal',
+                        due_date: task.due_date || null,
+                        description: task.description || ''
+                      };
+                      allTags.push(tagData);
+                    } else {
+                      existingTag.task_count++;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          
+          // Get space lists (folders dışında)
           const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
             headers: { 'Authorization': token }
           });
@@ -154,7 +208,19 @@ export default {
                       id: tagId,
                       list_id: list.id,
                       space_id: space.id,
-                      task_count: 1
+                      folder_id: null,
+                      creator_id: task.creator?.id || null,
+                      creator_name: task.creator?.username || null,
+                      created_date: task.date_created,
+                      task_count: 1,
+                      workspace_id: task.workspace_id || null,
+                      chain_id: task.chain_id || null,
+                      userid: task.userid || null,
+                      dependencies: task.dependencies || [],
+                      assignees: task.assignees || [],
+                      priority: task.priority || 'Normal',
+                      due_date: task.due_date || null,
+                      description: task.description || ''
                     };
                     allTags.push(tagData);
                   } else {
