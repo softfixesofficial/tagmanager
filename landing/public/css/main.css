@@ -297,7 +297,7 @@ body {
 }
 
 /* Tag Manager Container */
-.tag-manager {
+.tag-manager-container {
     max-width: 1400px;
     margin: 2rem auto;
     background: var(--background-color);
@@ -1535,8 +1535,9 @@ body {
 
 /* Tag Statistics Panel Styles */
 .tag-statistics-container {
-    margin-top: 1.5rem;
+    margin-top: 2rem;
     width: 100%;
+    padding: 0 2rem;
 }
 
 .panel-statistics {
