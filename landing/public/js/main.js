@@ -838,7 +838,33 @@ class ClickUpTagManager {
         console.log('[FE] Right panel loading indicators will be replaced by content');
     }
     
-    // Loading indicator fonksiyonları
+    // Tab-specific loading indicator fonksiyonları
+    showTabLoading(tabId) {
+        const tab = document.querySelector(tabId);
+        if (tab) {
+            // Mevcut içeriği sakla
+            if (!tab.dataset.originalContent) {
+                tab.dataset.originalContent = tab.innerHTML;
+            }
+            
+            // Loading spinner ekle
+            tab.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; height: 200px;">
+                    <div class="spinner"></div>
+                </div>
+            `;
+        }
+    }
+
+    hideTabLoading(tabId) {
+        const tab = document.querySelector(tabId);
+        if (tab && tab.dataset.originalContent) {
+            tab.innerHTML = tab.dataset.originalContent;
+            delete tab.dataset.originalContent;
+        }
+    }
+
+    // Global loading indicator (sadece gerektiğinde)
     showLoadingIndicator() {
         const overlay = document.createElement('div');
         overlay.className = 'loading-overlay';
@@ -939,9 +965,11 @@ class ClickUpTagManager {
                     return;
                 }
                 
-                // Show loading indicator
-                this.showLoadingIndicator();
                 closeModal();
+                
+                // Show loading in tags and tag details tabs
+                this.showTabLoading('#tag-list');
+                this.showTabLoading('#tag-details');
                 
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}/color`, {
                     method: 'PUT',
@@ -952,35 +980,33 @@ class ClickUpTagManager {
                     body: JSON.stringify({ color: selectedColor })
                 });
                 
-                console.log('[TM] Color change response status:', response.status);
-                console.log('[TM] Color change response ok:', response.ok);
-                
                 if (response.ok) {
                     const responseData = await response.json();
                     
-                    // Hide loading indicator
-                    this.hideLoadingIndicator();
-                    
-                    // Update UI immediately without pop-up
-                    await this.loadTagsFromClickUp();
-                    
-                    // Force update selected tag with new color
-                    if (this.selectedTag) {
-                        const updatedTag = this.tags.find(t => t.name === this.selectedTag.name);
-                        if (updatedTag) {
-                            this.selectedTag = updatedTag;
-                        }
+                    // Update only the selected tag's color locally
+                    if (this.selectedTag && this.selectedTag.name === tagId) {
+                        this.selectedTag.tag_bg = selectedColor;
+                        this.selectedTag.tag_fg = selectedColor;
                     }
                     
-                    // Re-render both tag list and details
-                    this.render();
+                    // Update in tags array
+                    const tagIndex = this.tags.findIndex(t => t.name === tagId);
+                    if (tagIndex !== -1) {
+                        this.tags[tagIndex].tag_bg = selectedColor;
+                        this.tags[tagIndex].tag_fg = selectedColor;
+                    }
+                    
+                    // Re-render only tag list and details (no full page refresh)
+                    this.renderTagList();
+                    this.renderTagDetails();
                     
                 } else {
                     const errorData = await response.json();
                     console.error('[TM] Color change failed:', errorData);
                     
-                    // Hide loading indicator
-                    this.hideLoadingIndicator();
+                    // Hide tab loading
+                    this.hideTabLoading('#tag-list');
+                    this.hideTabLoading('#tag-details');
                     
                     // Show error only if it's a real error
                     if (errorData.message && !errorData.message.includes('successfully')) {
@@ -990,8 +1016,9 @@ class ClickUpTagManager {
             } catch (error) {
                 console.error('[FE] Error changing tag color:', error);
                 
-                // Hide loading indicator
-                this.hideLoadingIndicator();
+                // Hide tab loading
+                this.hideTabLoading('#tag-list');
+                this.hideTabLoading('#tag-details');
                 
                 alert('❌ Renk değiştirme hatası. Lütfen tekrar deneyin.');
             }
@@ -1032,8 +1059,10 @@ class ClickUpTagManager {
                     return;
                 }
 
-                // Show loading indicator
-                this.showLoadingIndicator();
+                // Show loading in all 3 tabs
+                this.showTabLoading('#tag-list');
+                this.showTabLoading('#tag-details');
+                this.showTabLoading('#tagged-items');
 
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'PUT',
@@ -1047,37 +1076,41 @@ class ClickUpTagManager {
                 if (response.ok) {
                     const responseData = await response.json();
                     
-                    // Hide loading indicator
-                    this.hideLoadingIndicator();
-                    
-                    // Update UI immediately without pop-up
-                    await this.loadTagsFromClickUp();
-                    
-                    // Force update selected tag with new name
-                    if (this.selectedTag) {
-                        const updatedTag = this.tags.find(t => t.name === newName.trim());
-                        if (updatedTag) {
-                            this.selectedTag = updatedTag;
-                        }
+                    // Update only the selected tag's name locally
+                    if (this.selectedTag && this.selectedTag.name === tagId) {
+                        this.selectedTag.name = newName.trim();
+                        this.selectedTag.id = newName.trim();
                     }
                     
-                    // Re-render both tag list and details
-                    this.render();
+                    // Update in tags array
+                    const tagIndex = this.tags.findIndex(t => t.name === tagId);
+                    if (tagIndex !== -1) {
+                        this.tags[tagIndex].name = newName.trim();
+                        this.tags[tagIndex].id = newName.trim();
+                    }
+                    
+                    // Re-render all tabs (no full page refresh)
+                    this.renderTagList();
+                    this.renderTagDetails();
                     
                 } else {
                     const errorData = await response.json();
                     console.error('[TM] Rename failed:', errorData);
                     
-                    // Hide loading indicator
-                    this.hideLoadingIndicator();
+                    // Hide tab loading
+                    this.hideTabLoading('#tag-list');
+                    this.hideTabLoading('#tag-details');
+                    this.hideTabLoading('#tagged-items');
                     
                     alert(`❌ Failed to rename tag: ${errorData.message || errorData.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('[FE] Error renaming tag:', error);
                 
-                // Hide loading indicator
-                this.hideLoadingIndicator();
+                // Hide tab loading
+                this.hideTabLoading('#tag-list');
+                this.hideTabLoading('#tag-details');
+                this.hideTabLoading('#tagged-items');
                 
                 alert('❌ Failed to rename tag. Please try again.');
             }
@@ -1096,8 +1129,10 @@ class ClickUpTagManager {
                     return;
                 }
                 
-                // Show loading indicator
-                this.showLoadingIndicator();
+                // Show loading in all tabs
+                this.showTabLoading('#tag-list');
+                this.showTabLoading('#tag-details');
+                this.showTabLoading('#tagged-items');
                 
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'DELETE',
@@ -1109,34 +1144,35 @@ class ClickUpTagManager {
                 if (response.ok) {
                     const responseData = await response.json();
                     
-                    // Hide loading indicator
-                    this.hideLoadingIndicator();
-                    
                     // Remove from local tags array
                     this.tags = this.tags.filter(t => t.id !== tagId);
-                    
-                    // Re-render tag list
-                    this.renderTagList();
                     
                     // If this tag is currently selected, clear selection
                     if (this.selectedTag && this.selectedTag.id === tagId) {
                         this.selectedTag = null;
-                        this.renderTagDetails();
                     }
+                    
+                    // Re-render all tabs
+                    this.renderTagList();
+                    this.renderTagDetails();
                     
                 } else {
                     const errorData = await response.json();
                     
-                    // Hide loading indicator
-                    this.hideLoadingIndicator();
+                    // Hide tab loading
+                    this.hideTabLoading('#tag-list');
+                    this.hideTabLoading('#tag-details');
+                    this.hideTabLoading('#tagged-items');
                     
                     alert(`Failed to delete tag: ${errorData.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('[FE] Error deleting tag:', error);
                 
-                // Hide loading indicator
-                this.hideLoadingIndicator();
+                // Hide tab loading
+                this.hideTabLoading('#tag-list');
+                this.hideTabLoading('#tag-details');
+                this.hideTabLoading('#tagged-items');
                 
                 alert('Failed to delete tag. Please try again.');
             }
