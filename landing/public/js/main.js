@@ -149,15 +149,6 @@ class ClickUpTagManager {
     }
 
     render() {
-        console.log('[TM] Rendering UI... tags count =', this.tags.length, 'selectedTag =', this.selectedTag ? this.selectedTag.name : null);
-        if (this.selectedTag) {
-            console.log('[TM] Selected tag details:', {
-                name: this.selectedTag.name,
-                color: this.selectedTag.color,
-                tag_bg: this.selectedTag.tag_bg,
-                tag_fg: this.selectedTag.tag_fg
-            });
-        }
         this.renderTagList();
         this.renderTagDetails();
     }
@@ -226,19 +217,9 @@ class ClickUpTagManager {
     }
 
     async renderTagDetails() {
-        console.log('[TM] renderTagDetails called for tag:', this.selectedTag?.name);
-        if (this.selectedTag) {
-            console.log('[TM] Tag color in renderTagDetails:', {
-                name: this.selectedTag.name,
-                tag_bg: this.selectedTag.tag_bg,
-                color: this.selectedTag.color
-            });
-        }
-        
         const detailsPanel = this.container.querySelector('#tag-details');
         const taggedItemsPanel = this.container.querySelector('#tagged-items');
         if (!this.selectedTag) {
-            console.log('[TM] No tag selected. Showing empty selection message.');
             detailsPanel.innerHTML = `<div class="no-selection-message">Select a tag</div>`;
             taggedItemsPanel.innerHTML = '';
             return;
@@ -946,19 +927,13 @@ class ClickUpTagManager {
         
         // Uygula butonu
         applyBtn.addEventListener('click', async () => {
-            console.log('[TM] Apply button clicked!');
-            console.log('[TM] Selected color:', selectedColor);
-            console.log('[TM] Current color:', currentColor);
-            
             if (selectedColor === currentColor) {
-                console.log('[TM] Same color selected, closing modal');
                 closeModal();
                 return;
             }
             
             try {
                 const token = localStorage.getItem('clickup_access_token');
-                console.log('[TM] Token exists:', !!token);
                 
                 if (!token) {
                     alert('No access token found. Please login again.');
@@ -968,10 +943,6 @@ class ClickUpTagManager {
                 // Show loading indicator
                 this.showLoadingIndicator('Tag rengi değiştiriliyor...');
                 closeModal();
-                
-                console.log('[TM] Making PUT request to change tag color...');
-                console.log('[TM] URL:', `https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}/color`);
-                console.log('[TM] Request body:', { color: selectedColor });
                 
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}/color`, {
                     method: 'PUT',
@@ -987,23 +958,18 @@ class ClickUpTagManager {
                 
                 if (response.ok) {
                     const responseData = await response.json();
-                    console.log('[TM] Color change successful:', responseData);
                     
                     // Hide loading indicator
                     this.hideLoadingIndicator();
                     
-                    alert(`✅ Tag Rengi Değiştirildi!\n\nYeni renk: ${selectedColor}\n\nRefreshing tag list...`);
-                    
-                    console.log('[TM] Loading tags from ClickUp...');
+                    // Update UI immediately without pop-up
                     await this.loadTagsFromClickUp();
-                    console.log('[TM] Rendering...');
                     this.render();
                     
                     // Force update selected tag with new color
                     if (this.selectedTag) {
                         const updatedTag = this.tags.find(t => t.name === this.selectedTag.name);
                         if (updatedTag) {
-                            console.log('[TM] Updating selected tag with new color:', updatedTag.tag_bg);
                             this.selectedTag = updatedTag;
                             this.renderTagDetails(); // Force re-render only details
                         }
@@ -1016,7 +982,10 @@ class ClickUpTagManager {
                     // Hide loading indicator
                     this.hideLoadingIndicator();
                     
-                    alert(`❌ Renk değiştirme başarısız: ${errorData.message || errorData.error || 'Unknown error'}`);
+                    // Show error only if it's a real error
+                    if (errorData.message && !errorData.message.includes('successfully')) {
+                        alert(`❌ Renk değiştirme başarısız: ${errorData.message || errorData.error || 'Unknown error'}`);
+                    }
                 }
             } catch (error) {
                 console.error('[FE] Error changing tag color:', error);
@@ -1055,48 +1024,33 @@ class ClickUpTagManager {
         const newName = prompt('Enter new tag name:', currentName);
         console.log('[TM] New name entered:', newName);
         
-        if (newName && newName.trim() && newName.trim() !== currentName) {
-            console.log('[TM] Starting tag rename using Delete+Create workaround...');
-                    try {
-            const token = localStorage.getItem('clickup_access_token');
-            if (!token) {
-                alert('No access token found. Please login again.');
-                return;
-            }
+                if (newName && newName.trim() && newName.trim() !== currentName) {
+            try {
+                const token = localStorage.getItem('clickup_access_token');
+                if (!token) {
+                    alert('No access token found. Please login again.');
+                    return;
+                }
 
-            // Show loading indicator
-            this.showLoadingIndicator('Tag yeniden adlandırılıyor...');
+                // Show loading indicator
+                this.showLoadingIndicator('Tag yeniden adlandırılıyor...');
 
-            console.log('[TM] Making PUT request to rename tag using Delete+Create...');
-            const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ name: newName.trim() })
-            });
-                
-                console.log('[TM] Rename response:', response.status, response.ok);
+                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name: newName.trim() })
+                });
                 
                 if (response.ok) {
                     const responseData = await response.json();
-                    console.log('[TM] Rename successful:', responseData);
                     
                     // Hide loading indicator
                     this.hideLoadingIndicator();
                     
-                    // Show success message with details
-                    alert(`✅ Smart Tag Rename Completed!\n\n` +
-                          `📊 Results:\n` +
-                          `• Processed ${responseData.processedSpaces || 0} spaces\n` +
-                          `• Found ${responseData.totalTasksFound || 0} tasks with old tag\n` +
-                          `• Re-assigned to ${responseData.reassignedTasks || 0} tasks\n` +
-                          `• Method: ${responseData.method || 'delete-create-reassign'}\n\n` +
-                          `🎉 Your tasks still have the tag with the new name!\n\n` +
-                          `Refreshing tag list...`);
-                    
-                    // Refresh tags from server
+                    // Update UI immediately without pop-up
                     await this.loadTagsFromClickUp();
                     this.render();
                     
@@ -1122,12 +1076,9 @@ class ClickUpTagManager {
     
     // Tag silme
     async deleteTag(tagId, tagName) {
-        console.log('[TM] deleteTag called:', { tagId, tagName });
         const confirmDelete = confirm(`Are you sure you want to delete tag "${tagName}"? This action cannot be undone.`);
-        console.log('[TM] Delete confirmed:', confirmDelete);
         
         if (confirmDelete) {
-            console.log('[TM] Starting tag delete API call...');
             try {
                 const token = localStorage.getItem('clickup_access_token');
                 if (!token) {
@@ -1138,7 +1089,6 @@ class ClickUpTagManager {
                 // Show loading indicator
                 this.showLoadingIndicator('Tag siliniyor...');
                 
-                console.log('[TM] Making DELETE request to delete tag...');
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'DELETE',
                     headers: {
@@ -1146,11 +1096,8 @@ class ClickUpTagManager {
                     }
                 });
                 
-                console.log('[TM] Delete response:', response.status, response.ok);
-                
                 if (response.ok) {
                     const responseData = await response.json();
-                    console.log('[TM] Delete successful:', responseData);
                     
                     // Hide loading indicator
                     this.hideLoadingIndicator();
@@ -1167,7 +1114,6 @@ class ClickUpTagManager {
                         this.renderTagDetails();
                     }
                     
-                    alert('Tag deleted successfully!');
                 } else {
                     const errorData = await response.json();
                     
