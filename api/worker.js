@@ -546,7 +546,16 @@ export default {
                   
                   if (updateResponse.ok) {
                     updatedTasks++;
-                    console.log(`[Worker] Successfully updated task ${task.id} with new tag name`);
+                    console.log(`[Worker] API Response OK for task ${task.id}`);
+                    
+                    // Verify the change by fetching the task again
+                    const verifyResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
+                      headers: { 'Authorization': token }
+                    });
+                    if (verifyResponse.ok) {
+                      const verifyData = await verifyResponse.json();
+                      console.log(`[Worker] Task ${task.id} current tags:`, verifyData.tags?.map(t => t.name));
+                    }
                   } else {
                     const errorText = await updateResponse.text();
                     console.error(`[Worker] Failed to update task ${task.id}:`, errorText);
@@ -595,7 +604,16 @@ export default {
                 
                 if (updateResponse.ok) {
                   updatedTasks++;
-                  console.log(`[Worker] Successfully updated task ${task.id} with new tag name`);
+                  console.log(`[Worker] API Response OK for task ${task.id}`);
+                  
+                  // Verify the change by fetching the task again
+                  const verifyResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
+                    headers: { 'Authorization': token }
+                  });
+                  if (verifyResponse.ok) {
+                    const verifyData = await verifyResponse.json();
+                    console.log(`[Worker] Task ${task.id} current tags:`, verifyData.tags?.map(t => t.name));
+                  }
                 } else {
                   const errorText = await updateResponse.text();
                   console.error(`[Worker] Failed to update task ${task.id}:`, errorText);
