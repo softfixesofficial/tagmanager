@@ -1,6 +1,7 @@
 name = "tagmanager-api"
 main = "api/worker.js"
 compatibility_date = "2024-01-01"
+account_id = "d77e3233c42f98cbf18a3e096a6fb1e1"
 
 [vars]
 CLICKUP_CLIENT_ID = "E5Y5P88KKK742V28R31AR7EIWR3J0CWU"

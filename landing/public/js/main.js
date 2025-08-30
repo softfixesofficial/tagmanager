@@ -4,7 +4,7 @@
     const code = urlParams.get('code');
     if (code) {
 
-        fetch('https://tagmanager-api.izzetjmy.workers.dev/api/clickup/token', {
+        fetch('https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code })
