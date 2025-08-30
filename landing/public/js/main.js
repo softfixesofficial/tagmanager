@@ -307,14 +307,18 @@ class ClickUpTagManager {
                     <div class="item-details">
                         <span class="item-status ${item.status.toLowerCase().replace(' ', '-')}">${item.status}</span>
                         <div class="item-meta">
-                            <div class="item-meta-item">
-                                <span>👤</span>
-                                <span>${item.assignee || 'Unassigned'}</span>
-                            </div>
-                            <div class="item-meta-item">
-                                <span>📅</span>
-                                <span>${item.dueDate || 'No due date'}</span>
-                            </div>
+                            ${item.assignee && item.assignee !== 'Unassigned' ? `
+                                <div class="item-meta-item">
+                                    <span>👤</span>
+                                    <span>${item.assignee}</span>
+                                </div>
+                            ` : ''}
+                            ${item.dueDate && item.dueDate !== 'No due date' ? `
+                                <div class="item-meta-item">
+                                    <span>📅</span>
+                                    <span>${item.dueDate}</span>
+                                </div>
+                            ` : ''}
                             <div class="item-meta-item">
                                 <span>👨‍💼</span>
                                 <span>${item.creator || 'Unknown'}</span>
