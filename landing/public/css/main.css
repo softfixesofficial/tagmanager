@@ -109,6 +109,26 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    max-width: 100vw;
+    overflow-x: hidden;
+}
+
+/* Page Header Styles */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2rem 2.5rem 1.5rem 2.5rem;
+    background: var(--background);
+    border-radius: 0 0 var(--radius) var(--radius);
+    border-bottom: 1px solid var(--border);
+}
+
+.page-title {
+    font-size: 1.7rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0;
 }
 
 .tag-manager-header {
@@ -125,7 +145,188 @@ body {
 
 .header-actions {
     display: flex;
+    align-items: center;
     gap: 1.5rem;
+}
+
+/* Language Switch Styles */
+.language-switch {
+    display: flex;
+    background: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.lang-btn {
+    background: none;
+    border: none;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.lang-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.lang-btn:hover:not(.active) {
+    background: var(--panel-background);
+    color: var(--text-primary);
+}
+
+/* User Profile Styles */
+.user-profile-container {
+    position: relative;
+}
+
+.user-profile-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 1rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.user-profile-trigger:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.user-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.dropdown-arrow {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease;
+}
+
+.user-profile-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.5rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    min-width: 280px;
+}
+
+.profile-card {
+    padding: 1.5rem;
+}
+
+.profile-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.profile-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.profile-email {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.profile-workspace {
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.workspace-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.workspace-plan {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.profile-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.profile-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--panel-background);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.profile-action-btn:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+}
+
+.action-icon {
+    font-size: 1rem;
 }
 
 .header-actions button, .header-actions .btn {
@@ -146,11 +347,13 @@ body {
 
 .tag-manager-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr 2fr;
+    grid-template-rows: auto;
     gap: 2.5rem;
     padding: 2.5rem;
     flex: 1;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .panel {
@@ -279,20 +482,29 @@ body {
 @media (max-width: 900px) {
     .tag-manager-grid {
         grid-template-columns: 1fr;
-        grid-template-rows: repeat(4, auto);
+        grid-template-rows: repeat(2, auto);
         gap: 1.2rem;
         padding: 1rem;
     }
-    .panel-search-active, .panel-inactive, .panel-details, .panel-fake-data {
+    .panel-search-active, .panel-right-stack {
         grid-column: 1 / 2 !important;
         grid-row: auto !important;
     }
-    .tag-manager-header {
+    .page-header {
         padding: 1.2rem 1rem 1rem 1rem;
+    }
+    .page-title {
         font-size: 1.2rem;
     }
     .panel {
         padding: 1.2rem 0.7rem 1rem 0.7rem;
+    }
+    .tag-statistics-container {
+        padding: 1rem;
+    }
+    .header-actions {
+        flex-direction: column;
+        gap: 0.75rem;
     }
 }
 
@@ -1535,9 +1747,9 @@ body {
 
 /* Tag Statistics Panel Styles */
 .tag-statistics-container {
-    margin-top: 2rem;
     width: 100%;
-    padding: 0 2rem;
+    padding: 2rem;
+    margin-top: 0;
 }
 
 .panel-statistics {
