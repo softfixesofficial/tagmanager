@@ -196,30 +196,62 @@
 
 
 
-/* Page Title Styles */
-.page-title-container {
-    text-align: center;
-    margin-bottom: 2rem;
-    padding: 2rem 0;
+/* Page Header Styles */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 1.5rem 2rem;
     border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+}
+
+.page-title-container {
+    flex: 1;
 }
 
 .page-title {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 700;
-    color: #1e293b;
-    margin: 0 0 0.5rem 0;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #475569;
+    margin: 0;
 }
 
-.page-subtitle {
-    font-size: 1.1rem;
-    color: #64748b;
-    margin: 0;
-    font-weight: 400;
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.language-switch {
+    display: flex;
+    background: white;
+    border-radius: 8px;
+    padding: 2px;
+    border: 1px solid #d1d5db;
+}
+
+.lang-btn {
+    background: transparent;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.lang-btn.active {
+    background: #3b82f6;
+    color: white;
+}
+
+.lang-btn:hover:not(.active) {
+    background: #f3f4f6;
+    color: #374151;
 }
 
 /* Task Card Improvements */
