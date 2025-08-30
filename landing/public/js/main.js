@@ -1271,7 +1271,7 @@ class ClickUpTagManager {
         }
     }
 
-    // Load user profile data
+    // Load user profile data using correct ClickUp API endpoints
     async loadUserProfile() {
         try {
             const token = localStorage.getItem('clickup_access_token');
@@ -1286,31 +1286,35 @@ class ClickUpTagManager {
 
             console.log('[TM] Loading user profile with token:', token.substring(0, 10) + '...');
             
-            // Try multiple endpoints to get comprehensive user data
             let userData = null;
             
-            // First try: Get user info
+            // Try the correct ClickUp API endpoints
             try {
-                console.log('[TM] Trying user endpoint...');
-                const userResponse = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/user?token=${token}`, {
+                console.log('[TM] Trying ClickUp authorized user endpoint...');
+                
+                // First try: Get authorized user (this should work with any plan)
+                const authUserResponse = await fetch('https://api.clickup.com/api/v2/user', {
                     method: 'GET',
                     headers: {
+                        'Authorization': token,
                         'Content-Type': 'application/json',
                     }
                 });
                 
-                console.log('[TM] User API response status:', userResponse.status);
+                console.log('[TM] ClickUp authorized user response status:', authUserResponse.status);
                 
-                if (userResponse.ok) {
-                    const userResult = await userResponse.json();
-                    console.log('[TM] User endpoint response:', userResult);
+                if (authUserResponse.ok) {
+                    const authUserData = await authUserResponse.json();
+                    console.log('[TM] ClickUp authorized user data:', authUserData);
                     
-                    if (userResult.user) {
+                    if (authUserData.user) {
                         userData = {
                             user: {
-                                username: userResult.user.username || userResult.user.name || 'ClickUp User',
-                                email: userResult.user.email || 'user@clickup.com',
-                                profilePicture: userResult.user.profilePicture,
+                                username: authUserData.user.username || authUserData.user.name || 'ClickUp User',
+                                email: authUserData.user.email || 'user@clickup.com',
+                                profilePicture: authUserData.user.profilePicture,
+                                id: authUserData.user.id,
+                                color: authUserData.user.color,
                                 role: 'Member'
                             },
                             team: {
@@ -1320,59 +1324,105 @@ class ClickUpTagManager {
                         };
                     }
                 } else {
-                    const errorText = await userResponse.text();
-                    console.error('[TM] User endpoint error:', errorText);
+                    const errorText = await authUserResponse.text();
+                    console.error('[TM] ClickUp authorized user error:', errorText);
                 }
             } catch (e) {
-                console.error('[TM] User endpoint failed:', e);
+                console.error('[TM] ClickUp authorized user endpoint failed:', e);
             }
             
-            // Second try: Get teams data if user data not available
-            if (!userData) {
+            // Second try: Get authorized workspaces to get team info
+            if (!userData || !userData.team.name || userData.team.name === 'My Workspace') {
                 try {
-                    console.log('[TM] Trying teams endpoint...');
-                    const teamsResponse = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/teams?token=${token}`, {
+                    console.log('[TM] Trying ClickUp authorized workspaces endpoint...');
+                    
+                    const workspacesResponse = await fetch('https://api.clickup.com/api/v2/team', {
                         method: 'GET',
                         headers: {
+                            'Authorization': token,
                             'Content-Type': 'application/json',
                         }
                     });
                     
-                    console.log('[TM] Teams API response status:', teamsResponse.status);
+                    console.log('[TM] ClickUp workspaces response status:', workspacesResponse.status);
                     
-                    if (teamsResponse.ok) {
-                        const teamsResult = await teamsResponse.json();
-                        console.log('[TM] Teams endpoint response:', teamsResult);
+                    if (workspacesResponse.ok) {
+                        const workspacesData = await workspacesResponse.json();
+                        console.log('[TM] ClickUp workspaces data:', workspacesData);
                         
-                        if (teamsResult.teams && teamsResult.teams.length > 0) {
-                            const team = teamsResult.teams[0];
-                            const member = team.members?.[0];
+                        if (workspacesData.teams && workspacesData.teams.length > 0) {
+                            const team = workspacesData.teams[0];
                             
-                            userData = {
-                                user: {
-                                    username: member?.user?.username || member?.user?.name || 'Team Member',
-                                    email: member?.user?.email || 'member@clickup.com',
-                                    profilePicture: member?.user?.profilePicture,
-                                    role: member?.role || 'Member'
-                                },
-                                team: {
-                                    name: team.name || 'Team Workspace',
-                                    plan: team.plan || 'Free'
-                                }
-                            };
+                            // If we already have user data, just update team info
+                            if (userData) {
+                                userData.team = {
+                                    name: team.name || 'My Workspace',
+                                    id: team.id,
+                                    color: team.color,
+                                    avatar: team.avatar,
+                                    plan: 'Free' // Plan info might not be available in this endpoint
+                                };
+                            } else {
+                                // Create complete user data from workspace info
+                                userData = {
+                                    user: {
+                                        username: 'ClickUp User',
+                                        email: 'user@clickup.com',
+                                        role: 'Member'
+                                    },
+                                    team: {
+                                        name: team.name || 'My Workspace',
+                                        id: team.id,
+                                        color: team.color,
+                                        avatar: team.avatar,
+                                        plan: 'Free'
+                                    }
+                                };
+                            }
                         }
                     } else {
-                        const errorText = await teamsResponse.text();
-                        console.error('[TM] Teams endpoint error:', errorText);
+                        const errorText = await workspacesResponse.text();
+                        console.error('[TM] ClickUp workspaces error:', errorText);
                     }
                 } catch (e) {
-                    console.error('[TM] Teams endpoint failed:', e);
+                    console.error('[TM] ClickUp workspaces endpoint failed:', e);
                 }
             }
             
-            // If still no data, use mock data for demo
+            // Third try: Use our proxy endpoints as fallback
             if (!userData) {
-                console.log('[TM] Using demo data as fallback');
+                try {
+                    console.log('[TM] Trying proxy endpoints as fallback...');
+                    
+                    const proxyResponse = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/user?token=${token}`);
+                    
+                    if (proxyResponse.ok) {
+                        const proxyData = await proxyResponse.json();
+                        console.log('[TM] Proxy user data:', proxyData);
+                        
+                        if (proxyData.user) {
+                            userData = {
+                                user: {
+                                    username: proxyData.user.username || proxyData.user.name || 'ClickUp User',
+                                    email: proxyData.user.email || 'user@clickup.com',
+                                    profilePicture: proxyData.user.profilePicture,
+                                    role: 'Member'
+                                },
+                                team: {
+                                    name: proxyData.team?.name || 'My Workspace',
+                                    plan: proxyData.team?.plan || 'Free'
+                                }
+                            };
+                        }
+                    }
+                } catch (e) {
+                    console.error('[TM] Proxy endpoints failed:', e);
+                }
+            }
+            
+            // Final fallback with realistic demo data
+            if (!userData) {
+                console.log('[TM] Using realistic demo data as final fallback');
                 userData = {
                     user: { 
                         username: 'ClickUp User', 
