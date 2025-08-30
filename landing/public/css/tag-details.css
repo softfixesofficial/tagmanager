@@ -153,6 +153,84 @@
     cursor: not-allowed;
 }
 
+/* Loading Indicator Styles */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    color: #374151;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Task Card Improvements */
+.tagged-item {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 1.2rem;
+    transition: transform 0.2s;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+}
+
+.tagged-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.item-meta {
+    display: flex;
+    gap: 1rem;
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-top: 0.8rem;
+}
+
+.item-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.item-created-date {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
 .tag-details-info {
     flex: 1;
 }

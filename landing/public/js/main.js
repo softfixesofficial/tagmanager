@@ -67,7 +67,10 @@ function mapClickUpTaskToUI(task) {
         // Görseldeki gibi task ID formatı (örn: DB-501, DB-502)
         displayId: task.id ? `${task.tags && task.tags.length > 0 ? task.tags[0].name.toUpperCase() : 'TASK'}-${task.id.slice(-3)}` : task.id,
         // Tag bilgilerini sakla
-        tags: task.tags || []
+        tags: task.tags || [],
+        // Creator ve created date bilgileri
+        creator: task.creator ? (task.creator.username || task.creator.email || 'Unknown') : 'Unknown',
+        createdDate: task.date_created ? new Date(Number(task.date_created)).toLocaleDateString('tr-TR') : 'Unknown date'
     };
 }
 
@@ -323,8 +326,22 @@ class ClickUpTagManager {
                     <div class="item-details">
                         <span class="item-status ${item.status.toLowerCase().replace(' ', '-')}">${item.status}</span>
                         <div class="item-meta">
-                            <span class="item-assignee">👤 ${item.assignee}</span>
-                            <span class="item-due-date">📅 ${item.dueDate}</span>
+                            <div class="item-meta-item">
+                                <span>👤</span>
+                                <span>${item.assignee || 'Unassigned'}</span>
+                            </div>
+                            <div class="item-meta-item">
+                                <span>📅</span>
+                                <span>${item.dueDate || 'No due date'}</span>
+                            </div>
+                            <div class="item-meta-item">
+                                <span>👨‍💼</span>
+                                <span>${item.creator || 'Unknown'}</span>
+                            </div>
+                            <div class="item-meta-item">
+                                <span>📆</span>
+                                <span class="item-created-date">${item.createdDate || 'Unknown date'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -840,6 +857,27 @@ class ClickUpTagManager {
         console.log('[FE] Right panel loading indicators will be replaced by content');
     }
     
+    // Loading indicator fonksiyonları
+    showLoadingIndicator(message = 'İşlem yapılıyor...') {
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.id = 'loading-overlay';
+        overlay.innerHTML = `
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p class="loading-text">${message}</p>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+
+    hideLoadingIndicator() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            document.body.removeChild(overlay);
+        }
+    }
+
     // Renk değiştirme fonksiyonu
     async changeTagColor(tagId, currentColor) {
         console.log('[TM] changeTagColor called:', { tagId, currentColor });
@@ -927,6 +965,10 @@ class ClickUpTagManager {
                     return;
                 }
                 
+                // Show loading indicator
+                this.showLoadingIndicator('Tag rengi değiştiriliyor...');
+                closeModal();
+                
                 console.log('[TM] Making PUT request to change tag color...');
                 console.log('[TM] URL:', `https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}/color`);
                 console.log('[TM] Request body:', { color: selectedColor });
@@ -947,9 +989,11 @@ class ClickUpTagManager {
                     const responseData = await response.json();
                     console.log('[TM] Color change successful:', responseData);
                     
+                    // Hide loading indicator
+                    this.hideLoadingIndicator();
+                    
                     alert(`✅ Tag Rengi Değiştirildi!\n\nYeni renk: ${selectedColor}\n\nRefreshing tag list...`);
                     
-                    closeModal();
                     console.log('[TM] Loading tags from ClickUp...');
                     await this.loadTagsFromClickUp();
                     console.log('[TM] Rendering...');
@@ -968,10 +1012,18 @@ class ClickUpTagManager {
                 } else {
                     const errorData = await response.json();
                     console.error('[TM] Color change failed:', errorData);
+                    
+                    // Hide loading indicator
+                    this.hideLoadingIndicator();
+                    
                     alert(`❌ Renk değiştirme başarısız: ${errorData.message || errorData.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('[FE] Error changing tag color:', error);
+                
+                // Hide loading indicator
+                this.hideLoadingIndicator();
+                
                 alert('❌ Renk değiştirme hatası. Lütfen tekrar deneyin.');
             }
         });
@@ -1005,28 +1057,34 @@ class ClickUpTagManager {
         
         if (newName && newName.trim() && newName.trim() !== currentName) {
             console.log('[TM] Starting tag rename using Delete+Create workaround...');
-            try {
-                const token = localStorage.getItem('clickup_access_token');
-                if (!token) {
-                    alert('No access token found. Please login again.');
-                    return;
-                }
-                
-                console.log('[TM] Making PUT request to rename tag using Delete+Create...');
-                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ name: newName.trim() })
-                });
+                    try {
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) {
+                alert('No access token found. Please login again.');
+                return;
+            }
+
+            // Show loading indicator
+            this.showLoadingIndicator('Tag yeniden adlandırılıyor...');
+
+            console.log('[TM] Making PUT request to rename tag using Delete+Create...');
+            const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ name: newName.trim() })
+            });
                 
                 console.log('[TM] Rename response:', response.status, response.ok);
                 
                 if (response.ok) {
                     const responseData = await response.json();
                     console.log('[TM] Rename successful:', responseData);
+                    
+                    // Hide loading indicator
+                    this.hideLoadingIndicator();
                     
                     // Show success message with details
                     alert(`✅ Smart Tag Rename Completed!\n\n` +
@@ -1045,10 +1103,18 @@ class ClickUpTagManager {
                 } else {
                     const errorData = await response.json();
                     console.error('[TM] Rename failed:', errorData);
+                    
+                    // Hide loading indicator
+                    this.hideLoadingIndicator();
+                    
                     alert(`❌ Failed to rename tag: ${errorData.message || errorData.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('[FE] Error renaming tag:', error);
+                
+                // Hide loading indicator
+                this.hideLoadingIndicator();
+                
                 alert('❌ Failed to rename tag. Please try again.');
             }
         }
@@ -1069,6 +1135,9 @@ class ClickUpTagManager {
                     return;
                 }
                 
+                // Show loading indicator
+                this.showLoadingIndicator('Tag siliniyor...');
+                
                 console.log('[TM] Making DELETE request to delete tag...');
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'DELETE',
@@ -1082,6 +1151,9 @@ class ClickUpTagManager {
                 if (response.ok) {
                     const responseData = await response.json();
                     console.log('[TM] Delete successful:', responseData);
+                    
+                    // Hide loading indicator
+                    this.hideLoadingIndicator();
                     
                     // Remove from local tags array
                     this.tags = this.tags.filter(t => t.id !== tagId);
@@ -1098,10 +1170,18 @@ class ClickUpTagManager {
                     alert('Tag deleted successfully!');
                 } else {
                     const errorData = await response.json();
+                    
+                    // Hide loading indicator
+                    this.hideLoadingIndicator();
+                    
                     alert(`Failed to delete tag: ${errorData.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('[FE] Error deleting tag:', error);
+                
+                // Hide loading indicator
+                this.hideLoadingIndicator();
+                
                 alert('Failed to delete tag. Please try again.');
             }
         }
