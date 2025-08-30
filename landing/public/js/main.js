@@ -223,6 +223,15 @@ class ClickUpTagManager {
     }
 
     async renderTagDetails() {
+        console.log('[TM] renderTagDetails called for tag:', this.selectedTag?.name);
+        if (this.selectedTag) {
+            console.log('[TM] Tag color in renderTagDetails:', {
+                name: this.selectedTag.name,
+                tag_bg: this.selectedTag.tag_bg,
+                color: this.selectedTag.color
+            });
+        }
+        
         const detailsPanel = this.container.querySelector('#tag-details');
         const taggedItemsPanel = this.container.querySelector('#tagged-items');
         if (!this.selectedTag) {
@@ -945,6 +954,16 @@ class ClickUpTagManager {
                     await this.loadTagsFromClickUp();
                     console.log('[TM] Rendering...');
                     this.render();
+                    
+                    // Force update selected tag with new color
+                    if (this.selectedTag) {
+                        const updatedTag = this.tags.find(t => t.name === this.selectedTag.name);
+                        if (updatedTag) {
+                            console.log('[TM] Updating selected tag with new color:', updatedTag.tag_bg);
+                            this.selectedTag = updatedTag;
+                            this.renderTagDetails(); // Force re-render only details
+                        }
+                    }
                     
                 } else {
                     const errorData = await response.json();
