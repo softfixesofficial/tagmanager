@@ -8,7 +8,7 @@ export default {
 
     // CORS headers
     const corsHeaders = {
-      'Access-Control-Allow-Origin': 'https://tagmanager.softfixes.com',
+      'Access-Control-Allow-Origin': '*', // Local ve production için
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     };

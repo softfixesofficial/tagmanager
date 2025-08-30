@@ -4,7 +4,7 @@
     const code = urlParams.get('code');
     if (code) {
 
-        fetch('/api/clickup/token', {
+        fetch('https://tagmanager-api.izzetjmy.workers.dev/api/clickup/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ code })
@@ -31,7 +31,7 @@ async function loginWithClickUp() {
         console.log('[Auth] Creating OAuth URL directly...');
         // Frontend'de OAuth URL oluştur (Cloudflare challenge'ı geçmek için)
         const CLICKUP_CLIENT_ID = 'E5Y5P88KKK742V28R31AR7EIWR3J0CWU';
-        const CLICKUP_REDIRECT_URI = 'https://tagmanager.softfixes.com/';
+        const CLICKUP_REDIRECT_URI = window.location.origin + '/';
         
         const oauthUrl = `https://app.clickup.com/api?client_id=${encodeURIComponent(CLICKUP_CLIENT_ID)}&redirect_uri=${encodeURIComponent(CLICKUP_REDIRECT_URI)}`;
         

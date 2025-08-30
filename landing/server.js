@@ -50,6 +50,8 @@ app.post('/api/clickup/token', express.json(), async (req, res) => {
         const CLICKUP_CLIENT_SECRET = process.env.CLICKUP_CLIENT_SECRET;
         const CLICKUP_REDIRECT_URI = process.env.CLICKUP_REDIRECT_URI;
 
+        console.log('[Server] Token exchange request:', { code, CLICKUP_CLIENT_ID, CLICKUP_REDIRECT_URI });
+
         const response = await fetch('https://api.clickup.com/api/v2/oauth/token', {
             method: 'POST',
             headers: {
@@ -63,10 +65,10 @@ app.post('/api/clickup/token', express.json(), async (req, res) => {
         });
 
         const data = await response.json();
-        console.log('ClickUp token response:', data);
+        console.log('[Server] ClickUp token response:', data);
         res.json(data);
     } catch (err) {
-        console.error('Error exchanging code for token:', err);
+        console.error('[Server] Error exchanging code for token:', err);
         res.status(500).json({ error: err.message });
     }
 });
