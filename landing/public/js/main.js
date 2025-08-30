@@ -891,19 +891,29 @@ class ClickUpTagManager {
         
         // Uygula butonu
         applyBtn.addEventListener('click', async () => {
+            console.log('[TM] Apply button clicked!');
+            console.log('[TM] Selected color:', selectedColor);
+            console.log('[TM] Current color:', currentColor);
+            
             if (selectedColor === currentColor) {
+                console.log('[TM] Same color selected, closing modal');
                 closeModal();
                 return;
             }
             
             try {
                 const token = localStorage.getItem('clickup_access_token');
+                console.log('[TM] Token exists:', !!token);
+                
                 if (!token) {
                     alert('No access token found. Please login again.');
                     return;
                 }
                 
                 console.log('[TM] Making PUT request to change tag color...');
+                console.log('[TM] URL:', `https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}/color`);
+                console.log('[TM] Request body:', { color: selectedColor });
+                
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}/color`, {
                     method: 'PUT',
                     headers: {
@@ -913,7 +923,8 @@ class ClickUpTagManager {
                     body: JSON.stringify({ color: selectedColor })
                 });
                 
-                console.log('[TM] Color change response:', response.status, response.ok);
+                console.log('[TM] Color change response status:', response.status);
+                console.log('[TM] Color change response ok:', response.ok);
                 
                 if (response.ok) {
                     const responseData = await response.json();
@@ -922,7 +933,9 @@ class ClickUpTagManager {
                     alert(`✅ Tag Rengi Değiştirildi!\n\nYeni renk: ${selectedColor}\n\nRefreshing tag list...`);
                     
                     closeModal();
+                    console.log('[TM] Loading tags from ClickUp...');
                     await this.loadTagsFromClickUp();
+                    console.log('[TM] Rendering...');
                     this.render();
                     
                 } else {
