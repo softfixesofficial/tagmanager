@@ -86,6 +86,67 @@ export default {
       }
     }
 
+    // Get tags endpoint
+    if (path === '/api/clickup/tags' && request.method === 'GET') {
+      console.log('[Worker] Tags requested');
+      
+      const token = url.searchParams.get('token');
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'No token provided' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+
+      try {
+        console.log('[Worker] Fetching tags from ClickUp...');
+        
+        // Get teams first
+        const teamsResponse = await fetch('https://api.clickup.com/api/v2/team', {
+          headers: { 'Authorization': token }
+        });
+        const teamsData = await teamsResponse.json();
+        const teamId = teamsData.teams[0]?.id;
+        
+        if (!teamId) {
+          return new Response(JSON.stringify({ error: 'No team found' }), {
+            status: 404,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        // Get tags for the team
+        const tagsResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/tag`, {
+          headers: { 'Authorization': token }
+        });
+        const tagsData = await tagsResponse.json();
+        
+        console.log('[Worker] Tags response:', tagsData);
+        
+        return new Response(JSON.stringify(tagsData), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        console.error('[Worker] Tags fetch error:', err);
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
     // 404 for unknown routes
     console.log('[Worker] 404 - Route not found:', path);
     return new Response('Not Found', { status: 404 });
