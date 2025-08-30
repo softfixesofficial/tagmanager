@@ -125,7 +125,7 @@ class ClickUpTagManager {
         const teamId = null; // null olarak bırak, backend otomatik olarak ilk team'i kullanacak
         try {
             console.log('[TM] Fetching tags from backend...', { hasToken: !!token, teamId });
-            const res = await fetch(`https://tagmanager-api.izzetjmy.workers.dev/api/clickup/tags?token=${token}${teamId ? `&teamId=${teamId}` : ''}`);
+            const res = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tags?token=${token}${teamId ? `&teamId=${teamId}` : ''}`);
             console.log('[TM] /api/clickup/tags response ok =', res.ok, 'status =', res.status);
             if (!res.ok) {
                 this.hideLoading();
