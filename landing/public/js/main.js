@@ -100,10 +100,14 @@ class ClickUpTagManager {
         console.log('[TM] Token found. Showing Tag Manager section and loading tags...');
         showTagManagerSection();
         
-        // Load user profile first
-        console.log('[TM] Starting user profile load...');
+        // Load user profile
         await this.loadUserProfile();
-        console.log('[TM] User profile load completed');
+        
+        // Force refresh user profile after a delay to ensure proper loading
+        setTimeout(async () => {
+            console.log('[TM] Force refreshing user profile after delay...');
+            await this.loadUserProfile();
+        }, 1000);
         
         await this.loadTagsFromClickUp();
         this.render();
@@ -117,12 +121,6 @@ class ClickUpTagManager {
         
         // Create color filter options after tags are loaded
         this.createColorFilterOptions();
-        
-        // Force refresh user profile after a delay to ensure it loads
-        setTimeout(() => {
-            console.log('[TM] Force refreshing user profile...');
-            this.loadUserProfile();
-        }, 2000);
     }
 
     async loadTagsFromClickUp() {
@@ -1280,86 +1278,121 @@ class ClickUpTagManager {
             if (!token) {
                 console.log('[TM] No token available for user profile');
                 this.updateUserProfile({
-                    user: { username: 'User', email: 'user@example.com' },
-                    team: { name: 'My Workspace', plan: 'Free' }
+                    user: { username: 'Demo User', email: 'demo@example.com' },
+                    team: { name: 'Demo Workspace', plan: 'Free' }
                 });
                 return;
             }
 
-            console.log('[TM] Loading user profile with token...');
+            console.log('[TM] Loading user profile with token:', token.substring(0, 10) + '...');
             
-            // Try multiple endpoints to get user data
+            // Try multiple endpoints to get comprehensive user data
             let userData = null;
             
-            // First try: Direct user endpoint
+            // First try: Get user info
             try {
-                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/user?token=${token}`);
-                console.log('[TM] User API response status:', response.status);
+                console.log('[TM] Trying user endpoint...');
+                const userResponse = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/user?token=${token}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
                 
-                if (response.ok) {
-                    userData = await response.json();
-                    console.log('[TM] User data received:', userData);
+                console.log('[TM] User API response status:', userResponse.status);
+                
+                if (userResponse.ok) {
+                    const userResult = await userResponse.json();
+                    console.log('[TM] User endpoint response:', userResult);
+                    
+                    if (userResult.user) {
+                        userData = {
+                            user: {
+                                username: userResult.user.username || userResult.user.name || 'ClickUp User',
+                                email: userResult.user.email || 'user@clickup.com',
+                                profilePicture: userResult.user.profilePicture,
+                                role: 'Member'
+                            },
+                            team: {
+                                name: 'My Workspace',
+                                plan: 'Free'
+                            }
+                        };
+                    }
+                } else {
+                    const errorText = await userResponse.text();
+                    console.error('[TM] User endpoint error:', errorText);
                 }
             } catch (e) {
-                console.log('[TM] User endpoint failed:', e);
+                console.error('[TM] User endpoint failed:', e);
             }
             
-            // Second try: Teams endpoint
+            // Second try: Get teams data if user data not available
             if (!userData) {
                 try {
-                    const teamsResponse = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/teams?token=${token}`);
+                    console.log('[TM] Trying teams endpoint...');
+                    const teamsResponse = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/teams?token=${token}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
                     console.log('[TM] Teams API response status:', teamsResponse.status);
                     
                     if (teamsResponse.ok) {
-                        const teamsData = await teamsResponse.json();
-                        console.log('[TM] Teams data received:', teamsData);
+                        const teamsResult = await teamsResponse.json();
+                        console.log('[TM] Teams endpoint response:', teamsResult);
                         
-                        // Extract user info from teams data
-                        if (teamsData.teams && teamsData.teams.length > 0) {
-                            const firstTeam = teamsData.teams[0];
-                            const firstMember = firstTeam.members?.[0];
+                        if (teamsResult.teams && teamsResult.teams.length > 0) {
+                            const team = teamsResult.teams[0];
+                            const member = team.members?.[0];
                             
                             userData = {
                                 user: {
-                                    username: firstMember?.user?.username || firstMember?.user?.name || 'ClickUp User',
-                                    email: firstMember?.user?.email || 'user@clickup.com',
-                                    profilePicture: firstMember?.user?.profilePicture,
-                                    role: firstMember?.role || 'Member'
+                                    username: member?.user?.username || member?.user?.name || 'Team Member',
+                                    email: member?.user?.email || 'member@clickup.com',
+                                    profilePicture: member?.user?.profilePicture,
+                                    role: member?.role || 'Member'
                                 },
                                 team: {
-                                    name: firstTeam.name || 'My Workspace',
-                                    plan: firstTeam.plan || 'Free'
+                                    name: team.name || 'Team Workspace',
+                                    plan: team.plan || 'Free'
                                 }
                             };
                         }
+                    } else {
+                        const errorText = await teamsResponse.text();
+                        console.error('[TM] Teams endpoint error:', errorText);
                     }
                 } catch (e) {
-                    console.log('[TM] Teams endpoint failed:', e);
+                    console.error('[TM] Teams endpoint failed:', e);
                 }
             }
             
-            // Third try: Mock data for testing
+            // If still no data, use mock data for demo
             if (!userData) {
-                console.log('[TM] Using mock data for testing');
+                console.log('[TM] Using demo data as fallback');
                 userData = {
                     user: { 
-                        username: 'Test User', 
-                        email: 'test@clickup.com',
+                        username: 'ClickUp User', 
+                        email: 'user@clickup.com',
                         role: 'Admin',
                         profilePicture: null
                     },
                     team: { 
-                        name: 'Test Workspace', 
-                        plan: 'Unlimited' 
+                        name: 'My Workspace', 
+                        plan: 'Business' 
                     }
                 };
             }
             
+            console.log('[TM] Final user data to update:', userData);
             this.updateUserProfile(userData);
             
         } catch (error) {
             console.error('[TM] Error loading user profile:', error);
-            // Set default values with more realistic data
+            // Set fallback data
             this.updateUserProfile({
                 user: { 
                     username: 'ClickUp User', 
@@ -1806,14 +1839,6 @@ function logout() {
     showLoginSection();
 }
 
-// Refresh user profile function
-function refreshUserProfile() {
-    console.log('[Auth] Manually refreshing user profile...');
-    if (window.tagManager) {
-        window.tagManager.loadUserProfile();
-    }
-}
-
 // Language Switch Function
 function switchLanguage(lang) {
     console.log('[Lang] Switching to:', lang);
@@ -1829,11 +1854,11 @@ function switchLanguage(lang) {
         }
     });
     
-    // Update switch animation
-    if (lang === 'tr') {
-        langSwitch.classList.add('tr-active');
+    // Update switch animation (TR is first, EN is second)
+    if (lang === 'en') {
+        langSwitch.classList.add('en-active');
     } else {
-        langSwitch.classList.remove('tr-active');
+        langSwitch.classList.remove('en-active');
     }
     
     // Store language preference
@@ -1901,6 +1926,14 @@ window.addEventListener('load', () => {
     switchLanguage(savedLang);
 });
 
+// Global function to manually refresh user profile (for debugging)
+window.refreshUserProfile = function() {
+    console.log('[Debug] Manual user profile refresh triggered');
+    if (window.tagManager) {
+        window.tagManager.loadUserProfile();
+    }
+};
+
 // Uygulamayı başlat
 const tagManager = new ClickUpTagManager('tag-manager-section');
-window.tagManager = tagManager; // Make it globally accessible 
+window.tagManager = tagManager; // Make globally accessible for debugging 

@@ -149,7 +149,7 @@ body {
     gap: 1.5rem;
 }
 
-/* Modern Language Switch Styles - Like the Image */
+/* Modern iOS-style Language Switch */
 .language-switch {
     position: relative;
     display: flex;
@@ -178,7 +178,7 @@ body {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.language-switch.tr-active::before {
+.language-switch.en-active::before {
     transform: translateX(58px);
 }
 
@@ -217,28 +217,30 @@ body {
     transform: scale(1.05);
 }
 
-/* Background patterns for language buttons */
-.lang-btn[data-lang="en"] {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-}
-
+/* Flag-inspired styling for TR button */
 .lang-btn[data-lang="tr"] {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-    position: relative;
+    background: linear-gradient(135deg, #e53e3e 0%, #e53e3e 33%, #ffffff 33%, #ffffff 66%, #38a169 66%, #38a169 100%);
+    background-size: 100% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
 }
 
-.lang-btn[data-lang="tr"]::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        radial-gradient(circle at 20% 30%, #dc2626 0%, #dc2626 8px, transparent 8px),
-        radial-gradient(circle at 80% 70%, #dc2626 0%, #dc2626 8px, transparent 8px);
-    opacity: 0.3;
-    pointer-events: none;
+/* UK flag inspiration for EN button */
+.lang-btn[data-lang="en"] {
+    background: linear-gradient(135deg, #3182ce 0%, #3182ce 50%, #e53e3e 50%, #e53e3e 100%);
+    background-size: 100% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 800;
+}
+
+.lang-btn.active[data-lang="tr"],
+.lang-btn.active[data-lang="en"] {
+    -webkit-text-fill-color: #1f2937;
+    background: none;
 }
 
 /* User Profile Styles */
@@ -251,34 +253,33 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem 1rem;
-    background: white;
-    border: 2px solid #e5e7eb;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .user-profile-trigger:hover {
-    border-color: #4f8cff;
-    background: #f8fafc;
+    border-color: rgba(79, 140, 255, 0.4);
+    background: rgba(79, 140, 255, 0.1);
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(79, 140, 255, 0.15);
+    box-shadow: 0 6px 20px rgba(79, 140, 255, 0.15);
 }
 
 .user-avatar {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #4f8cff 0%, #6b9eff 100%);
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-weight: 600;
     font-size: 0.9rem;
-    border: 2px solid #e5e7eb;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .user-name {
