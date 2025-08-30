@@ -147,6 +147,14 @@ class ClickUpTagManager {
 
     render() {
         console.log('[TM] Rendering UI... tags count =', this.tags.length, 'selectedTag =', this.selectedTag ? this.selectedTag.name : null);
+        if (this.selectedTag) {
+            console.log('[TM] Selected tag details:', {
+                name: this.selectedTag.name,
+                color: this.selectedTag.color,
+                tag_bg: this.selectedTag.tag_bg,
+                tag_fg: this.selectedTag.tag_fg
+            });
+        }
         this.renderTagList();
         this.renderTagDetails();
     }
@@ -167,7 +175,7 @@ class ClickUpTagManager {
             tagElement.setAttribute('draggable', 'true');
             tagElement.innerHTML = `
                 <div class="tag-content">
-                    <div class="tag-color-dot" style="background-color: ${tag.color || '#4f8cff'}"></div>
+                    <div class="tag-color-dot" style="background-color: ${tag.tag_bg || tag.color || '#4f8cff'}"></div>
                     <div class="tag-main-info">
                         <div class="tag-name">${tag.name}</div>
                         <div class="tag-extra">#${tag.id}</div>
@@ -262,7 +270,7 @@ class ClickUpTagManager {
         }
         detailsPanel.innerHTML = `
             <div class="tag-details-header">
-                <div class="tag-details-color" style="background-color: ${this.selectedTag.color || '#4f8cff'}" onclick="tagManager.changeTagColor('${this.selectedTag.name}', '${this.selectedTag.color || '#4f8cff'}')"></div>
+                <div class="tag-details-color" style="background-color: ${this.selectedTag.tag_bg || this.selectedTag.color || '#4f8cff'}" onclick="tagManager.changeTagColor('${this.selectedTag.name}', '${this.selectedTag.tag_bg || this.selectedTag.color || '#4f8cff'}')"></div>
                 <div class="tag-details-info">
                     <h3 class="tag-details-title">${this.selectedTag.name}</h3>
                     <div class="tag-details-meta">
