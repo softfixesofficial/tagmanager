@@ -90,7 +90,7 @@ export default {
     if (path === '/api/clickup/tags' && request.method === 'GET') {
       console.log('[Worker] Tags requested');
       
-      const token = url.searchParams.get('token');
+      const token = request.headers.get('Authorization')?.replace('Bearer ', '') || url.searchParams.get('token');
       if (!token) {
         return new Response(JSON.stringify({ error: 'No token provided' }), {
           status: 400,
@@ -129,6 +129,29 @@ export default {
         
         let allTags = [];
         
+        // First, get all space tags to have the latest color information
+        let spaceTagsMap = new Map();
+        for (const space of spacesData.spaces || []) {
+          try {
+            const spaceTagsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/tag`, {
+              headers: { 'Authorization': token }
+            });
+            if (spaceTagsResponse.ok) {
+              const spaceTagsData = await spaceTagsResponse.json();
+              for (const spaceTag of spaceTagsData.tags || []) {
+                spaceTagsMap.set(spaceTag.name, {
+                  ...spaceTag,
+                  space_id: space.id
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`[Worker] Error fetching space tags for space ${space.id}:`, error);
+          }
+        }
+        
+        console.log(`[Worker] Found ${spaceTagsMap.size} space tags with latest colors`);
+        
         // Extract tags from tasks - routes.js'deki tam implementasyon
         for (const space of spacesData.spaces || []) {
           // Get folders in space
@@ -155,9 +178,14 @@ export default {
                   for (const tag of task.tags) {
                     const tagId = tag.name;
                     const existingTag = allTags.find(t => t.id === tagId);
+                    
+                    // Get latest color info from space tags
+                    const spaceTagInfo = spaceTagsMap.get(tagId);
+                    const latestTagInfo = spaceTagInfo || tag;
+                    
                     if (!existingTag) {
                       const tagData = {
-                        ...tag,
+                        ...latestTagInfo, // Use latest color info
                         id: tagId,
                         list_id: list.id,
                         space_id: space.id,
@@ -178,6 +206,11 @@ export default {
                       allTags.push(tagData);
                     } else {
                       existingTag.task_count++;
+                      // Update color info if we have newer data
+                      if (spaceTagInfo) {
+                        existingTag.tag_fg = spaceTagInfo.tag_fg;
+                        existingTag.tag_bg = spaceTagInfo.tag_bg;
+                      }
                     }
                   }
                 }
@@ -202,9 +235,14 @@ export default {
                 for (const tag of task.tags) {
                   const tagId = tag.name;
                   const existingTag = allTags.find(t => t.id === tagId);
+                  
+                  // Get latest color info from space tags
+                  const spaceTagInfo = spaceTagsMap.get(tagId);
+                  const latestTagInfo = spaceTagInfo || tag;
+                  
                   if (!existingTag) {
                     const tagData = {
-                      ...tag,
+                      ...latestTagInfo, // Use latest color info
                       id: tagId,
                       list_id: list.id,
                       space_id: space.id,
@@ -225,6 +263,11 @@ export default {
                     allTags.push(tagData);
                   } else {
                     existingTag.task_count++;
+                    // Update color info if we have newer data
+                    if (spaceTagInfo) {
+                      existingTag.tag_fg = spaceTagInfo.tag_fg;
+                      existingTag.tag_bg = spaceTagInfo.tag_bg;
+                    }
                   }
                 }
               }
