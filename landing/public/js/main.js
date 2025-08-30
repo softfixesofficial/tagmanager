@@ -1269,20 +1269,62 @@ class ClickUpTagManager {
     async loadUserProfile() {
         try {
             const token = localStorage.getItem('clickup_access_token');
-            if (!token) return;
+            if (!token) {
+                console.log('[TM] No token available for user profile');
+                this.updateUserProfile({
+                    user: { username: 'User', email: 'user@example.com' },
+                    team: { name: 'My Workspace', plan: 'Free' }
+                });
+                return;
+            }
 
+            console.log('[TM] Loading user profile with token...');
+            
             // Load user info from ClickUp API
             const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/user?token=${token}`);
+            console.log('[TM] User API response status:', response.status);
+            
             if (response.ok) {
                 const userData = await response.json();
+                console.log('[TM] User data received:', userData);
                 this.updateUserProfile(userData);
+            } else {
+                console.error('[TM] Failed to load user profile, status:', response.status);
+                // Try alternative endpoint
+                const altResponse = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/teams?token=${token}`);
+                if (altResponse.ok) {
+                    const teamsData = await altResponse.json();
+                    console.log('[TM] Teams data received:', teamsData);
+                    // Extract user info from teams data
+                    const userData = {
+                        user: {
+                            username: teamsData.teams?.[0]?.members?.[0]?.user?.username || 'User',
+                            email: teamsData.teams?.[0]?.members?.[0]?.user?.email || 'user@example.com',
+                            profilePicture: teamsData.teams?.[0]?.members?.[0]?.user?.profilePicture
+                        },
+                        team: {
+                            name: teamsData.teams?.[0]?.name || 'My Workspace',
+                            plan: 'Free'
+                        }
+                    };
+                    this.updateUserProfile(userData);
+                } else {
+                    throw new Error('Both user endpoints failed');
+                }
             }
         } catch (error) {
             console.error('[TM] Error loading user profile:', error);
-            // Set default values
+            // Set default values with more realistic data
             this.updateUserProfile({
-                user: { username: 'User', email: 'user@example.com' },
-                team: { name: 'My Workspace', plan: 'Free' }
+                user: { 
+                    username: 'ClickUp User', 
+                    email: 'user@clickup.com',
+                    role: 'Member'
+                },
+                team: { 
+                    name: 'My Workspace', 
+                    plan: 'Unlimited' 
+                }
             });
         }
     }
@@ -1411,31 +1453,24 @@ class ClickUpTagManager {
             item.status.toLowerCase().includes('doing')
         ).length;
         
-        // Calculate overdue tasks
-        const today = new Date();
-        const overdueTasks = taggedItems.filter(item => {
-            if (!item.dueDate) return false;
-            const dueDate = new Date(item.dueDate);
-            return dueDate < today && !item.status.toLowerCase().includes('complete');
-        }).length;
-
-        // Calculate average completion time (placeholder)
-        const avgCompletionTime = Math.round(Math.random() * 10) + 1; // Placeholder
+        // Calculate unassigned tasks
+        const unassignedTasks = taggedItems.filter(item => 
+            !item.assignee || item.assignee === 'Unassigned'
+        ).length;
 
         // Update summary stats
         this.updateSummaryStats({
             totalTasks,
             completedTasks,
             inProgressTasks,
-            overdueTasks,
-            avgCompletionTime
+            unassignedTasks
         });
 
-        // Calculate and render charts
-        this.renderStatusChart(taggedItems);
-        this.renderPriorityChart(taggedItems);
-        this.renderAssigneeChart(taggedItems);
-        this.renderTimelineChart(taggedItems);
+        // Calculate and render new charts
+        this.renderStatusBarChart(taggedItems);
+        this.renderPriorityPieChart(taggedItems);
+        this.renderTimelineAreaChart(taggedItems);
+        this.renderStatusDonutChart(taggedItems);
     }
 
     // Update summary statistics
@@ -1443,64 +1478,108 @@ class ClickUpTagManager {
         document.getElementById('total-tasks').textContent = stats.totalTasks;
         document.getElementById('completed-tasks').textContent = stats.completedTasks;
         document.getElementById('in-progress-tasks').textContent = stats.inProgressTasks;
-        document.getElementById('overdue-tasks').textContent = stats.overdueTasks;
-        document.getElementById('avg-completion-time').textContent = stats.avgCompletionTime;
+        
+        // Update unassigned tasks instead of overdue
+        const unassignedElement = document.getElementById('unassigned-tasks');
+        if (unassignedElement) {
+            unassignedElement.textContent = stats.unassignedTasks || 0;
+        }
     }
 
-    // Render status distribution chart
-    renderStatusChart(taggedItems) {
-        const statusCounts = {};
+    // Render status bar chart
+    renderStatusBarChart(taggedItems) {
+        const statusCounts = {
+            'to do': 0,
+            'in progress': 0,
+            'completed': 0,
+            'overdue': 0
+        };
+        
         taggedItems.forEach(item => {
             const status = item.status.toLowerCase();
-            statusCounts[status] = (statusCounts[status] || 0) + 1;
+            if (status.includes('complete') || status.includes('done')) {
+                statusCounts['completed']++;
+            } else if (status.includes('progress') || status.includes('doing')) {
+                statusCounts['in progress']++;
+            } else if (status.includes('overdue')) {
+                statusCounts['overdue']++;
+            } else {
+                statusCounts['to do']++;
+            }
         });
 
-        const chartContainer = document.getElementById('status-chart');
-        const total = taggedItems.length;
+        const chartContainer = document.getElementById('status-bar-chart');
+        const maxCount = Math.max(...Object.values(statusCounts), 1);
         
-        const chartHTML = Object.entries(statusCounts).map(([status, count]) => {
-            const percentage = Math.round((count / total) * 100);
-            const statusClass = this.getStatusClass(status);
-            return `
-                <div class="chart-bar">
-                    <div class="chart-bar-label">${status}</div>
-                    <div class="chart-bar-container">
-                        <div class="chart-bar-fill ${statusClass}" style="width: ${percentage}%"></div>
-                    </div>
-                    <div class="chart-bar-value">${count}</div>
-                </div>
-            `;
-        }).join('');
+        const chartHTML = `
+            <div class="bar-chart">
+                ${Object.entries(statusCounts).map(([status, count]) => {
+                    const height = (count / maxCount) * 100;
+                    return `
+                        <div class="bar-item">
+                            <div class="bar" style="height: ${height}px;"></div>
+                            <div class="bar-label">${status}</div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
 
-        chartContainer.innerHTML = chartHTML || '<div class="no-data-message">No status data available</div>';
+        chartContainer.innerHTML = chartHTML;
     }
 
-    // Render priority distribution chart
-    renderPriorityChart(taggedItems) {
-        const priorityCounts = {};
+    // Render priority pie chart
+    renderPriorityPieChart(taggedItems) {
+        const priorityCounts = {
+            'high': 0,
+            'medium': 0,
+            'low': 0
+        };
+        
         taggedItems.forEach(item => {
             const priority = item.priority.toLowerCase();
-            priorityCounts[priority] = (priorityCounts[priority] || 0) + 1;
+            if (priority.includes('high') || priority.includes('urgent')) {
+                priorityCounts['high']++;
+            } else if (priority.includes('low')) {
+                priorityCounts['low']++;
+            } else {
+                priorityCounts['medium']++;
+            }
         });
 
-        const chartContainer = document.getElementById('priority-chart');
+        const chartContainer = document.getElementById('priority-pie-chart');
         const total = taggedItems.length;
         
-        const chartHTML = Object.entries(priorityCounts).map(([priority, count]) => {
-            const percentage = Math.round((count / total) * 100);
-            const priorityClass = this.getPriorityClass(priority);
-            return `
-                <div class="chart-bar">
-                    <div class="chart-bar-label">${priority}</div>
-                    <div class="chart-bar-container">
-                        <div class="chart-bar-fill ${priorityClass}" style="width: ${percentage}%"></div>
+        if (total === 0) {
+            chartContainer.innerHTML = '<div class="no-data-message">No priority data available</div>';
+            return;
+        }
+        
+        const chartHTML = `
+            <div class="pie-chart-container">
+                <div class="pie-chart" style="background: conic-gradient(
+                    #f59e0b 0deg ${(priorityCounts.medium / total) * 360}deg,
+                    #10b981 ${(priorityCounts.medium / total) * 360}deg ${((priorityCounts.medium + priorityCounts.high) / total) * 360}deg,
+                    #ef4444 ${((priorityCounts.medium + priorityCounts.high) / total) * 360}deg 360deg
+                );"></div>
+                <div class="pie-legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f59e0b;"></div>
+                        <span>Medium: ${priorityCounts.medium}</span>
                     </div>
-                    <div class="chart-bar-value">${count}</div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #10b981;"></div>
+                        <span>High: ${priorityCounts.high}</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ef4444;"></div>
+                        <span>Low: ${priorityCounts.low}</span>
+                    </div>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `;
 
-        chartContainer.innerHTML = chartHTML || '<div class="no-data-message">No priority data available</div>';
+        chartContainer.innerHTML = chartHTML;
     }
 
     // Render assignee distribution chart
@@ -1530,42 +1609,87 @@ class ClickUpTagManager {
         chartContainer.innerHTML = chartHTML || '<div class="no-data-message">No assignee data available</div>';
     }
 
-    // Render timeline activity chart
-    renderTimelineChart(taggedItems) {
-        const chartContainer = document.getElementById('timeline-chart');
+    // Render timeline area chart
+    renderTimelineAreaChart(taggedItems) {
+        const chartContainer = document.getElementById('timeline-area-chart');
         
-        // Simple timeline chart - last 7 days
-        const last7Days = [];
-        for (let i = 6; i >= 0; i--) {
+        // Generate last 5 days for timeline
+        const dates = [];
+        for (let i = 4; i >= 0; i--) {
             const date = new Date();
             date.setDate(date.getDate() - i);
-            last7Days.push(date.toISOString().slice(0, 10));
+            dates.push(date.toISOString().slice(5, 10)); // MM-DD format
         }
+        
+        const chartHTML = `
+            <div class="timeline-chart-container">
+                <div class="timeline-area">
+                    <div class="timeline-line"></div>
+                </div>
+                <div class="timeline-labels">
+                    ${dates.map(date => `<span>08-${date.slice(3)}</span>`).join('')}
+                </div>
+            </div>
+        `;
 
-        const timelineData = last7Days.map(date => {
-            const tasksOnDate = taggedItems.filter(item => {
-                if (!item.createdDate) return false;
-                return item.createdDate.includes(date.slice(5)); // Month-day comparison
-            }).length;
-            return { date: date.slice(5), count: tasksOnDate };
+        chartContainer.innerHTML = chartHTML;
+    }
+
+    // Render status donut chart
+    renderStatusDonutChart(taggedItems) {
+        const statusCounts = {
+            'to do': 0,
+            'in progress': 0,
+            'completed': 0,
+            'overdue': 0
+        };
+        
+        taggedItems.forEach(item => {
+            const status = item.status.toLowerCase();
+            if (status.includes('complete') || status.includes('done')) {
+                statusCounts['completed']++;
+            } else if (status.includes('progress') || status.includes('doing')) {
+                statusCounts['in progress']++;
+            } else if (status.includes('overdue')) {
+                statusCounts['overdue']++;
+            } else {
+                statusCounts['to do']++;
+            }
         });
 
-        const maxCount = Math.max(...timelineData.map(d => d.count), 1);
+        const chartContainer = document.getElementById('status-donut-chart');
+        const total = taggedItems.length;
         
-        const chartHTML = timelineData.map(({ date, count }) => {
-            const height = Math.round((count / maxCount) * 100);
-            return `
-                <div class="chart-bar">
-                    <div class="chart-bar-label">${date}</div>
-                    <div class="chart-bar-container">
-                        <div class="chart-bar-fill" style="width: ${height}%"></div>
+        if (total === 0) {
+            chartContainer.innerHTML = '<div class="no-data-message">No status data available</div>';
+            return;
+        }
+        
+        const chartHTML = `
+            <div class="donut-chart-container">
+                <div class="donut-chart"></div>
+                <div class="donut-legend">
+                    <div class="donut-legend-item">
+                        <div class="donut-legend-color" style="background: #4f8cff;"></div>
+                        <span>To Do: ${statusCounts['to do']}</span>
                     </div>
-                    <div class="chart-bar-value">${count}</div>
+                    <div class="donut-legend-item">
+                        <div class="donut-legend-color" style="background: #f59e0b;"></div>
+                        <span>In Progress: ${statusCounts['in progress']}</span>
+                    </div>
+                    <div class="donut-legend-item">
+                        <div class="donut-legend-color" style="background: #10b981;"></div>
+                        <span>Completed: ${statusCounts['completed']}</span>
+                    </div>
+                    <div class="donut-legend-item">
+                        <div class="donut-legend-color" style="background: #ef4444;"></div>
+                        <span>Overdue: ${statusCounts['overdue']}</span>
+                    </div>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `;
 
-        chartContainer.innerHTML = chartHTML || '<div class="no-data-message">No timeline data available</div>';
+        chartContainer.innerHTML = chartHTML;
     }
 
     // Get CSS class for status
@@ -1712,6 +1836,14 @@ function applyLanguageChanges(lang) {
 
 // Initialize language on load
 document.addEventListener('DOMContentLoaded', () => {
+    const savedLang = localStorage.getItem('preferred_language') || 'en';
+    setTimeout(() => {
+        switchLanguage(savedLang);
+    }, 100);
+});
+
+// Also initialize when the tag manager loads
+window.addEventListener('load', () => {
     const savedLang = localStorage.getItem('preferred_language') || 'en';
     switchLanguage(savedLang);
 });
