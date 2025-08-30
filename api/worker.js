@@ -252,6 +252,429 @@ export default {
       }
     }
 
+    // Get tasks endpoint
+    if (path === '/api/clickup/tasks' && request.method === 'GET') {
+      console.log('[Worker] Tasks requested');
+      
+      const token = url.searchParams.get('token');
+      const listId = url.searchParams.get('listId');
+      
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'No token provided' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+
+      try {
+        let allTasks = [];
+        
+        if (listId === 'all') {
+          const teamsResponse = await fetch('https://api.clickup.com/api/v2/team', {
+            headers: { 'Authorization': token }
+          });
+          const teamsData = await teamsResponse.json();
+          const teamId = teamsData.teams[0]?.id;
+          
+          if (teamId) {
+            const spacesResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
+              headers: { 'Authorization': token }
+            });
+            const spacesData = await spacesResponse.json();
+            
+            for (const space of spacesData.spaces || []) {
+              const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
+                headers: { 'Authorization': token }
+              });
+              const foldersData = await foldersResponse.json();
+              
+              for (const folder of foldersData.folders || []) {
+                const listsResponse = await fetch(`https://api.clickup.com/api/v2/folder/${folder.id}/list`, {
+                  headers: { 'Authorization': token }
+                });
+                const listsData = await listsResponse.json();
+                
+                for (const list of listsData.lists || []) {
+                  const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                    headers: { 'Authorization': token }
+                  });
+                  const tasksData = await tasksResponse.json();
+                  allTasks = allTasks.concat(tasksData.tasks || []);
+                }
+              }
+              
+              const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+                headers: { 'Authorization': token }
+              });
+              const spaceListsData = await spaceListsResponse.json();
+              
+              for (const list of spaceListsData.lists || []) {
+                const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                  headers: { 'Authorization': token }
+                });
+                const tasksData = await tasksResponse.json();
+                allTasks = allTasks.concat(tasksData.tasks || []);
+              }
+            }
+          }
+        }
+        
+        console.log('[Worker] Tasks found:', allTasks.length);
+        
+        return new Response(JSON.stringify({ tasks: allTasks }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        console.error('[Worker] Tasks fetch error:', err);
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
+    // Get user endpoint
+    if (path === '/api/clickup/user' && request.method === 'GET') {
+      console.log('[Worker] User info requested');
+      
+      const token = url.searchParams.get('token');
+      
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'No token provided' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+
+      try {
+        const response = await fetch('https://api.clickup.com/api/v2/user', {
+          headers: { 'Authorization': token }
+        });
+        const data = await response.json();
+        
+        console.log('[Worker] User data:', data);
+        
+        return new Response(JSON.stringify(data.user), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        console.error('[Worker] User fetch error:', err);
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
+    // Update tag endpoint
+    if (path.startsWith('/api/clickup/tag/') && request.method === 'PUT') {
+      console.log('[Worker] Tag update requested');
+      
+      const tagId = path.split('/').pop();
+      const { name } = await request.json();
+      const authHeader = request.headers.get('Authorization');
+      const token = authHeader?.replace('Bearer ', '');
+      
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'No token provided' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+      
+      if (!name || !name.trim()) {
+        return new Response(JSON.stringify({ error: 'Tag name is required' }), {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+
+      try {
+        const teamResponse = await fetch('https://api.clickup.com/api/v2/team', {
+          headers: { 'Authorization': token }
+        });
+        const teamData = await teamResponse.json();
+        const teamId = teamData.teams[0]?.id;
+        
+        if (!teamId) {
+          return new Response(JSON.stringify({ error: 'No team found' }), {
+            status: 404,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        // Tag update logic (routes.js'den kopyalandı)
+        const spacesResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
+          headers: { 'Authorization': token }
+        });
+        const spacesData = await spacesResponse.json();
+        
+        let updatedTasks = 0;
+        
+        for (const space of spacesData.spaces || []) {
+          const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
+            headers: { 'Authorization': token }
+          });
+          const foldersData = await foldersResponse.json();
+          
+          for (const folder of foldersData.folders || []) {
+            const listsResponse = await fetch(`https://api.clickup.com/api/v2/folder/${folder.id}/list`, {
+              headers: { 'Authorization': token }
+            });
+            const listsData = await listsResponse.json();
+            
+            for (const list of listsData.lists || []) {
+              const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                headers: { 'Authorization': token }
+              });
+              const tasksData = await tasksResponse.json();
+              
+              for (const task of tasksData.tasks || []) {
+                if (task.tags && task.tags.some(t => t.name === tagId)) {
+                  const updatedTags = task.tags.map(tag => 
+                    tag.name === tagId 
+                      ? { ...tag, name: name.trim() }
+                      : tag
+                  );
+                  
+                  const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': token,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ tags: updatedTags })
+                  });
+                  
+                  if (updateResponse.ok) {
+                    updatedTasks++;
+                  }
+                }
+              }
+            }
+          }
+          
+          const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+            headers: { 'Authorization': token }
+          });
+          const spaceListsData = await spaceListsResponse.json();
+          
+          for (const list of spaceListsData.lists || []) {
+            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+              headers: { 'Authorization': token }
+            });
+            const tasksData = await tasksResponse.json();
+            
+            for (const task of tasksData.tasks || []) {
+              if (task.tags && task.tags.some(t => t.name === tagId)) {
+                const updatedTags = task.tags.map(tag => 
+                  tag.name === tagId 
+                    ? { ...tag, name: name.trim() }
+                    : tag
+                );
+                
+                const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ tags: updatedTags })
+                });
+                
+                if (updateResponse.ok) {
+                  updatedTasks++;
+                }
+              }
+            }
+          }
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: `Tag name updated in ClickUp: ${tagId} -> ${name}`,
+          updatedTasks 
+        }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        console.error('[Worker] Tag update error:', err);
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
+    // Delete tag endpoint
+    if (path.startsWith('/api/clickup/tag/') && request.method === 'DELETE') {
+      console.log('[Worker] Tag delete requested');
+      
+      const tagId = path.split('/').pop();
+      const authHeader = request.headers.get('Authorization');
+      const token = authHeader?.replace('Bearer ', '');
+      
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'No token provided' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+
+      try {
+        const teamResponse = await fetch('https://api.clickup.com/api/v2/team', {
+          headers: { 'Authorization': token }
+        });
+        const teamData = await teamResponse.json();
+        const teamId = teamData.teams[0]?.id;
+        
+        if (!teamId) {
+          return new Response(JSON.stringify({ error: 'No team found' }), {
+            status: 404,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        // Tag delete logic (routes.js'den kopyalandı)
+        const spacesResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
+          headers: { 'Authorization': token }
+        });
+        const spacesData = await spacesResponse.json();
+        
+        let updatedTasks = 0;
+        
+        for (const space of spacesData.spaces || []) {
+          const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
+            headers: { 'Authorization': token }
+          });
+          const foldersData = await foldersResponse.json();
+          
+          for (const folder of foldersData.folders || []) {
+            const listsResponse = await fetch(`https://api.clickup.com/api/v2/folder/${folder.id}/list`, {
+              headers: { 'Authorization': token }
+            });
+            const listsData = await listsResponse.json();
+            
+            for (const list of listsData.lists || []) {
+              const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                headers: { 'Authorization': token }
+              });
+              const tasksData = await tasksResponse.json();
+              
+              for (const task of tasksData.tasks || []) {
+                if (task.tags && task.tags.some(t => t.name === tagId)) {
+                  const updatedTags = task.tags.filter(tag => tag.name !== tagId);
+                  
+                  const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': token,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ tags: updatedTags })
+                  });
+                  
+                  if (updateResponse.ok) {
+                    updatedTasks++;
+                  }
+                }
+              }
+            }
+          }
+          
+          const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+            headers: { 'Authorization': token }
+          });
+          const spaceListsData = await spaceListsResponse.json();
+          
+          for (const list of spaceListsData.lists || []) {
+            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+              headers: { 'Authorization': token }
+            });
+            const tasksData = await tasksResponse.json();
+            
+            for (const task of tasksData.tasks || []) {
+              if (task.tags && task.tags.some(t => t.name === tagId)) {
+                const updatedTags = task.tags.filter(tag => tag.name !== tagId);
+                
+                const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ tags: updatedTags })
+                });
+                
+                if (updateResponse.ok) {
+                  updatedTasks++;
+                }
+              }
+            }
+          }
+        }
+        
+        return new Response(JSON.stringify({ 
+          success: true, 
+          message: `Tag deleted from ClickUp: ${tagId}`,
+          updatedTasks 
+        }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        console.error('[Worker] Tag delete error:', err);
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
     // 404 for unknown routes
     console.log('[Worker] 404 - Route not found:', path);
     return new Response('Not Found', { status: 404 });

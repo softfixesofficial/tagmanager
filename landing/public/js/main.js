@@ -231,7 +231,7 @@ class ClickUpTagManager {
         if (token) {
             try {
                 // Tüm list'lerden task'ları çek ve sadece bu tag'e sahip olanları filtrele
-                const res = await fetch(`http://localhost:4000/api/clickup/tasks?token=${token}&listId=all`);
+                const res = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tasks?token=${token}&listId=all`);
                 console.log('[TM] /api/clickup/tasks response ok =', res.ok, 'status =', res.status);
                 if (res.ok) {
                     const data = await res.json();
@@ -834,7 +834,7 @@ class ClickUpTagManager {
                     return;
                 }
                 
-                const response = await fetch(`http://localhost:4000/api/clickup/tag/${tagId}`, {
+                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -884,7 +884,7 @@ class ClickUpTagManager {
                     return;
                 }
                 
-                const response = await fetch(`http://localhost:4000/api/clickup/tag/${tagId}`, {
+                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
