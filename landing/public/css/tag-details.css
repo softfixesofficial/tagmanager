@@ -169,10 +169,15 @@
 
 .loading-spinner {
     background: white;
-    border-radius: 12px;
+    border-radius: 50%;
     padding: 2rem;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     text-align: center;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .spinner {
@@ -190,11 +195,7 @@
     100% { transform: rotate(360deg); }
 }
 
-.loading-text {
-    color: #374151;
-    font-weight: 500;
-    margin: 0;
-}
+
 
 /* Task Card Improvements */
 .tagged-item {

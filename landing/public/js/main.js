@@ -839,14 +839,13 @@ class ClickUpTagManager {
     }
     
     // Loading indicator fonksiyonları
-    showLoadingIndicator(message = 'İşlem yapılıyor...') {
+    showLoadingIndicator() {
         const overlay = document.createElement('div');
         overlay.className = 'loading-overlay';
         overlay.id = 'loading-overlay';
         overlay.innerHTML = `
             <div class="loading-spinner">
                 <div class="spinner"></div>
-                <p class="loading-text">${message}</p>
             </div>
         `;
         document.body.appendChild(overlay);
@@ -941,7 +940,7 @@ class ClickUpTagManager {
                 }
                 
                 // Show loading indicator
-                this.showLoadingIndicator('Tag rengi değiştiriliyor...');
+                this.showLoadingIndicator();
                 closeModal();
                 
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}/color`, {
@@ -964,16 +963,17 @@ class ClickUpTagManager {
                     
                     // Update UI immediately without pop-up
                     await this.loadTagsFromClickUp();
-                    this.render();
                     
                     // Force update selected tag with new color
                     if (this.selectedTag) {
                         const updatedTag = this.tags.find(t => t.name === this.selectedTag.name);
                         if (updatedTag) {
                             this.selectedTag = updatedTag;
-                            this.renderTagDetails(); // Force re-render only details
                         }
                     }
+                    
+                    // Re-render both tag list and details
+                    this.render();
                     
                 } else {
                     const errorData = await response.json();
@@ -1033,7 +1033,7 @@ class ClickUpTagManager {
                 }
 
                 // Show loading indicator
-                this.showLoadingIndicator('Tag yeniden adlandırılıyor...');
+                this.showLoadingIndicator();
 
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'PUT',
@@ -1052,6 +1052,16 @@ class ClickUpTagManager {
                     
                     // Update UI immediately without pop-up
                     await this.loadTagsFromClickUp();
+                    
+                    // Force update selected tag with new name
+                    if (this.selectedTag) {
+                        const updatedTag = this.tags.find(t => t.name === newName.trim());
+                        if (updatedTag) {
+                            this.selectedTag = updatedTag;
+                        }
+                    }
+                    
+                    // Re-render both tag list and details
                     this.render();
                     
                 } else {
@@ -1087,7 +1097,7 @@ class ClickUpTagManager {
                 }
                 
                 // Show loading indicator
-                this.showLoadingIndicator('Tag siliniyor...');
+                this.showLoadingIndicator();
                 
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'DELETE',
