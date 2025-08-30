@@ -209,6 +209,8 @@
 
 .page-title-container {
     flex: 1;
+    display: flex;
+    justify-content: center;
 }
 
 .page-title {

@@ -146,8 +146,7 @@ body {
 
 .tag-manager-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
+    grid-template-columns: 1fr 2fr;
     gap: 2.5rem;
     padding: 2.5rem;
     flex: 1;
@@ -175,10 +174,9 @@ body {
     gap: 0.5rem;
 }
 
-/* Sol üst: Arama ve aktif etiketler */
+/* Sol: Tag listesi */
 .panel-search-active {
     grid-column: 1 / 2;
-    grid-row: 1 / 2;
 }
 
 .search-container {
@@ -229,10 +227,9 @@ body {
     border-color: var(--primary);
 }
 
-/* Sol alt: İnaktif etiketler */
-.panel-inactive {
-    grid-column: 1 / 2;
-    grid-row: 2 / 3;
+/* Sağ: Detaylar */
+.panel-right-stack {
+    grid-column: 2 / 3;
 }
 
 
