@@ -823,30 +823,15 @@ class ClickUpTagManager {
         console.log('[FE] Right panel loading indicators will be replaced by content');
     }
     
-    // Tag düzenleme
+    // Tag düzenleme - Using ClickUp Space Tag API
     async editTag(tagId, currentName) {
         console.log('[TM] editTag called:', { tagId, currentName });
-        
-        // Kullanıcıya ClickUp limitasyonunu açıkla
-        alert(
-            `❌ ClickUp API Limitation\n\n` +
-            `Tag names cannot be changed through the API.\n\n` +
-            `ClickUp doesn't allow tag renaming via their API. ` +
-            `You need to manually change tag names in the ClickUp interface.\n\n` +
-            `Alternative: You can delete this tag and create a new one with the desired name.`
-        );
-        return;
-        
-        if (!confirmed) {
-            console.log('[TM] User cancelled tag edit');
-            return;
-        }
         
         const newName = prompt('Enter new tag name:', currentName);
         console.log('[TM] New name entered:', newName);
         
         if (newName && newName.trim() && newName.trim() !== currentName) {
-            console.log('[TM] Starting tag replacement API call...');
+            console.log('[TM] Starting tag update using ClickUp Space Tag API...');
             try {
                 const token = localStorage.getItem('clickup_access_token');
                 if (!token) {
@@ -854,7 +839,7 @@ class ClickUpTagManager {
                     return;
                 }
                 
-                console.log('[TM] Making PUT request to replace tag...');
+                console.log('[TM] Making PUT request to update tag using Space Tag API...');
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'PUT',
                     headers: {
@@ -864,14 +849,14 @@ class ClickUpTagManager {
                     body: JSON.stringify({ name: newName.trim() })
                 });
                 
-                console.log('[TM] Replace response:', response.status, response.ok);
+                console.log('[TM] Update response:', response.status, response.ok);
                 
                 if (response.ok) {
                     const responseData = await response.json();
-                    console.log('[TM] Replace result:', responseData);
+                    console.log('[TM] Update successful:', responseData);
                     
-                    // Show detailed result to user
-                    alert(`Tag replacement completed!\n\nUpdated ${responseData.updatedTasks || 0} tasks.\n\nNote: Due to ClickUp API limitations, you may need to refresh the page to see the changes.`);
+                    // Show success message with details
+                    alert(`✅ Tag Updated Successfully!\n\nUpdated in ${responseData.updatedSpaces || 0} spaces.\n\nRefreshing tag list...`);
                     
                     // Refresh tags from server
                     await this.loadTagsFromClickUp();
@@ -879,11 +864,12 @@ class ClickUpTagManager {
                     
                 } else {
                     const errorData = await response.json();
-                    alert(`Failed to replace tag: ${errorData.error || 'Unknown error'}`);
+                    console.error('[TM] Update failed:', errorData);
+                    alert(`❌ Failed to update tag: ${errorData.message || errorData.error || 'Unknown error'}`);
                 }
             } catch (error) {
-                console.error('[FE] Error replacing tag:', error);
-                alert('Failed to replace tag. Please try again.');
+                console.error('[FE] Error updating tag:', error);
+                alert('❌ Failed to update tag. Please try again.');
             }
         }
     }
