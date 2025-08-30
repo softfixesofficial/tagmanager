@@ -389,9 +389,7 @@ export default {
       console.log('[Worker] Tag update requested');
       
       const tagId = path.split('/').pop();
-      const { name } = await request.json();
-      const authHeader = request.headers.get('Authorization');
-      const token = authHeader?.replace('Bearer ', '');
+      const token = request.headers.get('Authorization')?.replace('Bearer ', '');
       
       if (!token) {
         return new Response(JSON.stringify({ error: 'No token provided' }), {
@@ -402,6 +400,9 @@ export default {
           }
         });
       }
+      
+      const body = await request.json();
+      const { name } = body;
       
       if (!name || !name.trim()) {
         return new Response(JSON.stringify({ error: 'Tag name is required' }), {
@@ -430,14 +431,16 @@ export default {
           });
         }
 
-        // Tag update logic (routes.js'den kopyalandı)
+        // Find all tasks with the old tag and update them
         const spacesResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
           headers: { 'Authorization': token }
         });
         const spacesData = await spacesResponse.json();
         
         let updatedTasks = 0;
+        let oldTagColor = null;
         
+        // First pass: find the old tag color
         for (const space of spacesData.spaces || []) {
           const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
             headers: { 'Authorization': token }
@@ -458,29 +461,20 @@ export default {
               
               for (const task of tasksData.tasks || []) {
                 if (task.tags && task.tags.some(t => t.name === tagId)) {
-                  const updatedTags = task.tags.map(tag => 
-                    tag.name === tagId 
-                      ? { ...tag, name: name.trim() }
-                      : tag
-                  );
-                  
-                  const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
-                    method: 'PUT',
-                    headers: {
-                      'Authorization': token,
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ tags: updatedTags })
-                  });
-                  
-                  if (updateResponse.ok) {
-                    updatedTasks++;
+                  const oldTag = task.tags.find(t => t.name === tagId);
+                  if (oldTag && oldTag.color) {
+                    oldTagColor = oldTag.color;
+                    break;
                   }
                 }
               }
+              if (oldTagColor) break;
             }
+            if (oldTagColor) break;
           }
+          if (oldTagColor) break;
           
+          // Check space lists too
           const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
             headers: { 'Authorization': token }
           });
@@ -494,11 +488,86 @@ export default {
             
             for (const task of tasksData.tasks || []) {
               if (task.tags && task.tags.some(t => t.name === tagId)) {
-                const updatedTags = task.tags.map(tag => 
-                  tag.name === tagId 
-                    ? { ...tag, name: name.trim() }
-                    : tag
-                );
+                const oldTag = task.tags.find(t => t.name === tagId);
+                if (oldTag && oldTag.color) {
+                  oldTagColor = oldTag.color;
+                  break;
+                }
+              }
+            }
+            if (oldTagColor) break;
+          }
+          if (oldTagColor) break;
+        }
+        
+        // Second pass: update all tasks with the old tag
+        for (const space of spacesData.spaces || []) {
+          const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
+            headers: { 'Authorization': token }
+          });
+          const foldersData = await foldersResponse.json();
+          
+          for (const folder of foldersData.folders || []) {
+            const listsResponse = await fetch(`https://api.clickup.com/api/v2/folder/${folder.id}/list`, {
+              headers: { 'Authorization': token }
+            });
+            const listsData = await listsResponse.json();
+            
+            for (const list of listsData.lists || []) {
+              const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                headers: { 'Authorization': token }
+              });
+              const tasksData = await tasksResponse.json();
+              
+              for (const task of tasksData.tasks || []) {
+                if (task.tags && task.tags.some(t => t.name === tagId)) {
+                  // Remove old tag and add new tag with same color
+                  const updatedTags = task.tags.filter(tag => tag.name !== tagId);
+                  updatedTags.push({
+                    name: name.trim(),
+                    color: oldTagColor || '#4f8cff'
+                  });
+                  
+                  const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
+                    method: 'PUT',
+                    headers: {
+                      'Authorization': token,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ tags: updatedTags })
+                  });
+                  
+                  if (updateResponse.ok) {
+                    updatedTasks++;
+                    console.log(`[Worker] Updated task ${task.id} with new tag name`);
+                  } else {
+                    console.error(`[Worker] Failed to update task ${task.id}:`, await updateResponse.text());
+                  }
+                }
+              }
+            }
+          }
+          
+          // Check space lists too
+          const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+            headers: { 'Authorization': token }
+          });
+          const spaceListsData = await spaceListsResponse.json();
+          
+          for (const list of spaceListsData.lists || []) {
+            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+              headers: { 'Authorization': token }
+            });
+            const tasksData = await tasksResponse.json();
+            
+            for (const task of tasksData.tasks || []) {
+              if (task.tags && task.tags.some(t => t.name === tagId)) {
+                // Remove old tag and add new tag with same color
+                const updatedTags = task.tags.filter(tag => tag.name !== tagId);
+                updatedTags.push({
+                  name: name.trim(),
+                  color: oldTagColor || '#4f8cff'
+                });
                 
                 const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
                   method: 'PUT',
@@ -511,15 +580,20 @@ export default {
                 
                 if (updateResponse.ok) {
                   updatedTasks++;
+                  console.log(`[Worker] Updated task ${task.id} with new tag name`);
+                } else {
+                  console.error(`[Worker] Failed to update task ${task.id}:`, await updateResponse.text());
                 }
               }
             }
           }
         }
         
+        console.log(`[Worker] Tag update completed. Updated ${updatedTasks} tasks.`);
+        
         return new Response(JSON.stringify({ 
           success: true, 
-          message: `Tag name updated in ClickUp: ${tagId} -> ${name}`,
+          message: `Tag updated successfully. Updated ${updatedTasks} tasks.`,
           updatedTasks 
         }), {
           headers: {
