@@ -500,7 +500,124 @@ export default {
           if (oldTagColor) break;
         }
         
-        // Second pass: update all tasks with the old tag
+        // Strategy: Create new tag first, then remove old tag
+        // Step 1: Find a task to create the new tag on
+        let newTagCreated = false;
+        let taskWithOldTag = null;
+        
+        // Find first task with the old tag
+        for (const space of spacesData.spaces || []) {
+          if (taskWithOldTag) break;
+          
+          const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
+            headers: { 'Authorization': token }
+          });
+          const foldersData = await foldersResponse.json();
+          
+          for (const folder of foldersData.folders || []) {
+            if (taskWithOldTag) break;
+            
+            const listsResponse = await fetch(`https://api.clickup.com/api/v2/folder/${folder.id}/list`, {
+              headers: { 'Authorization': token }
+            });
+            const listsData = await listsResponse.json();
+            
+            for (const list of listsData.lists || []) {
+              if (taskWithOldTag) break;
+              
+              const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                headers: { 'Authorization': token }
+              });
+              const tasksData = await tasksResponse.json();
+              
+              for (const task of tasksData.tasks || []) {
+                if (task.tags && task.tags.some(t => t.name === tagId)) {
+                  taskWithOldTag = task;
+                  console.log(`[Worker] Found task ${task.id} with old tag "${tagId}"`);
+                  break;
+                }
+              }
+            }
+          }
+          
+          // Check space lists too
+          if (taskWithOldTag) break;
+          
+          const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+            headers: { 'Authorization': token }
+          });
+          const spaceListsData = await spaceListsResponse.json();
+          
+          for (const list of spaceListsData.lists || []) {
+            if (taskWithOldTag) break;
+            
+            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+              headers: { 'Authorization': token }
+            });
+            const tasksData = await tasksResponse.json();
+            
+            for (const task of tasksData.tasks || []) {
+              if (task.tags && task.tags.some(t => t.name === tagId)) {
+                taskWithOldTag = task;
+                console.log(`[Worker] Found task ${task.id} with old tag "${tagId}"`);
+                break;
+              }
+            }
+          }
+        }
+        
+        if (!taskWithOldTag) {
+          console.log(`[Worker] No task found with tag "${tagId}"`);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            message: `No tasks found with tag "${tagId}"`,
+            updatedTasks: 0 
+          }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
+        // Step 2: Create new tag by adding it to the task (alongside old tag)
+        console.log(`[Worker] Creating new tag "${name.trim()}" on task ${taskWithOldTag.id}`);
+        const newTags = [...taskWithOldTag.tags];
+        newTags.push({
+          name: name.trim(),
+          tag_fg: oldTagColor || '#4f8cff',
+          tag_bg: oldTagColor || '#4f8cff',
+          creator: taskWithOldTag.creator?.id || 194462996
+        });
+        
+        const createResponse = await fetch(`https://api.clickup.com/api/v2/task/${taskWithOldTag.id}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ tags: newTags })
+        });
+        
+        if (createResponse.ok) {
+          console.log(`[Worker] New tag "${name.trim()}" created successfully`);
+          newTagCreated = true;
+        } else {
+          const errorText = await createResponse.text();
+          console.error(`[Worker] Failed to create new tag:`, errorText);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            message: `Failed to create new tag: ${errorText}`,
+            updatedTasks: 0 
+          }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
+        // Step 3: Replace old tag with new tag on all tasks
         for (const space of spacesData.spaces || []) {
           const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
             headers: { 'Authorization': token }
@@ -521,19 +638,19 @@ export default {
               
               for (const task of tasksData.tasks || []) {
                 if (task.tags && task.tags.some(t => t.name === tagId)) {
-                  // Remove old tag completely and add new tag with same color
-                  const updatedTags = task.tags.filter(tag => tag.name !== tagId);
+                  // Replace old tag with new tag
+                  const updatedTags = task.tags.map(tag => 
+                    tag.name === tagId 
+                      ? {
+                          name: name.trim(),
+                          tag_fg: oldTagColor || '#4f8cff',
+                          tag_bg: oldTagColor || '#4f8cff',
+                          creator: task.creator?.id || 194462996
+                        }
+                      : tag
+                  );
                   
-                  // Add new tag with same color but different name
-                  updatedTags.push({
-                    name: name.trim(),
-                    tag_fg: oldTagColor || '#4f8cff',
-                    tag_bg: oldTagColor || '#4f8cff',
-                    creator: task.creator?.id || 194462996
-                  });
-                  
-                  console.log(`[Worker] Updating task ${task.id}: removing tag "${tagId}", adding tag "${name.trim()}"`);
-                  console.log(`[Worker] Updated tags:`, updatedTags);
+                  console.log(`[Worker] Replacing tag on task ${task.id}: "${tagId}" -> "${name.trim()}"`);
                   
                   const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
                     method: 'PUT',
@@ -546,26 +663,17 @@ export default {
                   
                   if (updateResponse.ok) {
                     updatedTasks++;
-                    console.log(`[Worker] API Response OK for task ${task.id}`);
-                    
-                    // Verify the change by fetching the task again
-                    const verifyResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
-                      headers: { 'Authorization': token }
-                    });
-                    if (verifyResponse.ok) {
-                      const verifyData = await verifyResponse.json();
-                      console.log(`[Worker] Task ${task.id} current tags:`, verifyData.tags?.map(t => t.name));
-                    }
+                    console.log(`[Worker] Successfully replaced tag on task ${task.id}`);
                   } else {
                     const errorText = await updateResponse.text();
-                    console.error(`[Worker] Failed to update task ${task.id}:`, errorText);
+                    console.error(`[Worker] Failed to replace tag on task ${task.id}:`, errorText);
                   }
                 }
               }
             }
           }
           
-          // Check space lists too
+          // Check space lists too  
           const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
             headers: { 'Authorization': token }
           });
@@ -579,19 +687,19 @@ export default {
             
             for (const task of tasksData.tasks || []) {
               if (task.tags && task.tags.some(t => t.name === tagId)) {
-                // Remove old tag completely and add new tag with same color
-                const updatedTags = task.tags.filter(tag => tag.name !== tagId);
+                // Replace old tag with new tag
+                const updatedTags = task.tags.map(tag => 
+                  tag.name === tagId 
+                    ? {
+                        name: name.trim(),
+                        tag_fg: oldTagColor || '#4f8cff',
+                        tag_bg: oldTagColor || '#4f8cff',
+                        creator: task.creator?.id || 194462996
+                      }
+                    : tag
+                );
                 
-                // Add new tag with same color but different name
-                updatedTags.push({
-                  name: name.trim(),
-                  tag_fg: oldTagColor || '#4f8cff',
-                  tag_bg: oldTagColor || '#4f8cff',
-                  creator: task.creator?.id || 194462996
-                });
-                
-                console.log(`[Worker] Updating task ${task.id}: removing tag "${tagId}", adding tag "${name.trim()}"`);
-                console.log(`[Worker] Updated tags:`, updatedTags);
+                console.log(`[Worker] Replacing tag on task ${task.id}: "${tagId}" -> "${name.trim()}"`);
                 
                 const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
                   method: 'PUT',
@@ -604,19 +712,10 @@ export default {
                 
                 if (updateResponse.ok) {
                   updatedTasks++;
-                  console.log(`[Worker] API Response OK for task ${task.id}`);
-                  
-                  // Verify the change by fetching the task again
-                  const verifyResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
-                    headers: { 'Authorization': token }
-                  });
-                  if (verifyResponse.ok) {
-                    const verifyData = await verifyResponse.json();
-                    console.log(`[Worker] Task ${task.id} current tags:`, verifyData.tags?.map(t => t.name));
-                  }
+                  console.log(`[Worker] Successfully replaced tag on task ${task.id}`);
                 } else {
                   const errorText = await updateResponse.text();
-                  console.error(`[Worker] Failed to update task ${task.id}:`, errorText);
+                  console.error(`[Worker] Failed to replace tag on task ${task.id}:`, errorText);
                 }
               }
             }

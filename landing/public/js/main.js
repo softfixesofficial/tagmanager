@@ -828,13 +828,14 @@ class ClickUpTagManager {
         console.log('[TM] editTag called:', { tagId, currentName });
         
         // Kullanıcıya ClickUp limitasyonunu açıkla
-        const confirmed = confirm(
-            `ClickUp API limitation: Tag names cannot be changed directly.\n\n` +
-            `This will:\n` +
-            `1. Remove the old tag "${currentName}" from all tasks\n` +
-            `2. Add a new tag with the new name to those tasks\n\n` +
-            `Do you want to continue?`
+        alert(
+            `❌ ClickUp API Limitation\n\n` +
+            `Tag names cannot be changed through the API.\n\n` +
+            `ClickUp doesn't allow tag renaming via their API. ` +
+            `You need to manually change tag names in the ClickUp interface.\n\n` +
+            `Alternative: You can delete this tag and create a new one with the desired name.`
         );
+        return;
         
         if (!confirmed) {
             console.log('[TM] User cancelled tag edit');
