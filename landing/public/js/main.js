@@ -823,27 +823,73 @@ class ClickUpTagManager {
         console.log('[FE] Right panel loading indicators will be replaced by content');
     }
     
-    // Tag düzenleme - ClickUp API Limitation
+    // Tag düzenleme - Using Delete + Create workaround
     async editTag(tagId, currentName) {
         console.log('[TM] editTag called:', { tagId, currentName });
         
-        // Final conclusion: ClickUp API doesn't allow tag name changes
-        alert(
-            `🚫 ClickUp API Limitation Confirmed\n\n` +
-            `After testing both Task Tag API and Space Tag API, ` +
-            `ClickUp does NOT allow changing tag names programmatically.\n\n` +
-            `✅ What works:\n` +
-            `• View tags and tasks\n` +
-            `• Delete tags\n` +
-            `• Create new tags\n\n` +
-            `❌ What doesn't work:\n` +
-            `• Renaming existing tags\n\n` +
-            `To rename a tag, you must:\n` +
-            `1. Delete this tag: "${currentName}"\n` +
-            `2. Create a new tag with the desired name\n` +
-            `3. Manually assign the new tag to tasks in ClickUp\n\n` +
-            `This is a ClickUp API limitation, not our application.`
+        // Inform user about the workaround
+        const confirmed = confirm(
+            `🔄 Tag Rename Workaround\n\n` +
+            `ClickUp API doesn't support direct tag renaming.\n\n` +
+            `Our workaround:\n` +
+            `1. Delete the old tag: "${currentName}"\n` +
+            `2. Create a new tag with the new name\n` +
+            `3. Keep the same color\n\n` +
+            `⚠️ Warning: This will remove the tag from all tasks!\n` +
+            `You'll need to manually re-assign the new tag to tasks in ClickUp.\n\n` +
+            `Do you want to continue?`
         );
+        
+        if (!confirmed) {
+            console.log('[TM] User cancelled tag rename');
+            return;
+        }
+        
+        const newName = prompt('Enter new tag name:', currentName);
+        console.log('[TM] New name entered:', newName);
+        
+        if (newName && newName.trim() && newName.trim() !== currentName) {
+            console.log('[TM] Starting tag rename using Delete+Create workaround...');
+            try {
+                const token = localStorage.getItem('clickup_access_token');
+                if (!token) {
+                    alert('No access token found. Please login again.');
+                    return;
+                }
+                
+                console.log('[TM] Making PUT request to rename tag using Delete+Create...');
+                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ name: newName.trim() })
+                });
+                
+                console.log('[TM] Rename response:', response.status, response.ok);
+                
+                if (response.ok) {
+                    const responseData = await response.json();
+                    console.log('[TM] Rename successful:', responseData);
+                    
+                    // Show success message with details
+                    alert(`✅ Tag Renamed Successfully!\n\nProcessed ${responseData.processedSpaces || 0} spaces.\nMethod: ${responseData.method || 'delete-create'}\n\n⚠️ Remember to re-assign the new tag to tasks in ClickUp!\n\nRefreshing tag list...`);
+                    
+                    // Refresh tags from server
+                    await this.loadTagsFromClickUp();
+                    this.render();
+                    
+                } else {
+                    const errorData = await response.json();
+                    console.error('[TM] Rename failed:', errorData);
+                    alert(`❌ Failed to rename tag: ${errorData.message || errorData.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('[FE] Error renaming tag:', error);
+                alert('❌ Failed to rename tag. Please try again.');
+            }
+        }
     }
     
     // Tag silme

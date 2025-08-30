@@ -384,9 +384,9 @@ export default {
       }
     }
 
-    // Update tag endpoint - Using ClickUp Space Tag API
+    // Update tag endpoint - Using Delete + Create workaround
     if (path.startsWith('/api/clickup/tag/') && request.method === 'PUT') {
-      console.log('[Worker] Tag update requested');
+      console.log('[Worker] Tag update requested - using Delete + Create workaround');
       
       const tagId = path.split('/').pop();
       const token = request.headers.get('Authorization')?.replace('Bearer ', '');
@@ -437,44 +437,79 @@ export default {
         });
         const spacesData = await spacesResponse.json();
         
-        let updatedSpaces = 0;
+        let processedSpaces = 0;
         let errors = [];
+        let oldTagColor = '#4f8cff';
         
-        // Update tag in each space using ClickUp Space Tag API
+        // Step 1: Find old tag color from space tags
         for (const space of spacesData.spaces || []) {
-          console.log(`[Worker] Updating tag "${tagId}" to "${name.trim()}" in space ${space.id}`);
-          
-          // Use ClickUp Edit Space Tag API
-          const updateResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/tag/${encodeURIComponent(tagId)}`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': token,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ 
-              name: name.trim(),
-              tag_fg: '#4f8cff',
-              tag_bg: '#4f8cff'
-            })
+          const spaceTagsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/tag`, {
+            headers: { 'Authorization': token }
           });
           
-          if (updateResponse.ok) {
-            updatedSpaces++;
-            console.log(`[Worker] Successfully updated tag in space ${space.id}`);
-          } else {
-            const errorText = await updateResponse.text();
-            console.error(`[Worker] Failed to update tag in space ${space.id}:`, errorText);
-            errors.push(`Space ${space.name}: ${errorText}`);
+          if (spaceTagsResponse.ok) {
+            const spaceTagsData = await spaceTagsResponse.json();
+            const oldTag = spaceTagsData.tags?.find(tag => tag.name === tagId);
+            if (oldTag && oldTag.tag_bg) {
+              oldTagColor = oldTag.tag_bg;
+              console.log(`[Worker] Found old tag color: ${oldTagColor}`);
+              break;
+            }
           }
         }
         
-        console.log(`[Worker] Tag update completed. Updated in ${updatedSpaces} spaces.`);
+        // Step 2: Delete + Create in each space
+        for (const space of spacesData.spaces || []) {
+          console.log(`[Worker] Processing tag "${tagId}" -> "${name.trim()}" in space ${space.id}`);
+          
+          // Delete old tag
+          const deleteResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/tag/${encodeURIComponent(tagId)}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': token }
+          });
+          
+          if (deleteResponse.ok) {
+            console.log(`[Worker] Deleted old tag "${tagId}" from space ${space.id}`);
+            
+            // Create new tag with same color
+            const createResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/tag`, {
+              method: 'POST',
+              headers: {
+                'Authorization': token,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ 
+                tag: {
+                  name: name.trim(),
+                  tag_fg: oldTagColor,
+                  tag_bg: oldTagColor
+                }
+              })
+            });
+            
+            if (createResponse.ok) {
+              processedSpaces++;
+              console.log(`[Worker] Created new tag "${name.trim()}" in space ${space.id}`);
+            } else {
+              const createError = await createResponse.text();
+              console.error(`[Worker] Failed to create new tag in space ${space.id}:`, createError);
+              errors.push(`Create in ${space.name}: ${createError}`);
+            }
+          } else {
+            const deleteError = await deleteResponse.text();
+            console.error(`[Worker] Failed to delete old tag from space ${space.id}:`, deleteError);
+            errors.push(`Delete from ${space.name}: ${deleteError}`);
+          }
+        }
         
-        if (updatedSpaces > 0) {
+        console.log(`[Worker] Tag rename completed. Processed ${processedSpaces} spaces.`);
+        
+        if (processedSpaces > 0) {
           return new Response(JSON.stringify({ 
             success: true, 
-            message: `Tag updated successfully in ${updatedSpaces} spaces.`,
-            updatedSpaces,
+            message: `Tag renamed successfully! Processed ${processedSpaces} spaces.`,
+            processedSpaces,
+            method: 'delete-create',
             errors: errors.length > 0 ? errors : undefined
           }), {
             headers: {
@@ -485,7 +520,7 @@ export default {
         } else {
           return new Response(JSON.stringify({ 
             success: false, 
-            message: `Failed to update tag in any space.`,
+            message: `Failed to rename tag in any space.`,
             errors
           }), {
             status: 400,
@@ -496,7 +531,7 @@ export default {
           });
         }
       } catch (err) {
-        console.error('[Worker] Tag update error:', err);
+        console.error('[Worker] Tag rename error:', err);
         return new Response(JSON.stringify({ error: err.message }), {
           status: 500,
           headers: {
