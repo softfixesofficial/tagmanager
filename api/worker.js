@@ -458,7 +458,69 @@ export default {
           }
         }
         
-        // Step 2: Delete + Create in each space
+        // Step 2: Find all tasks with the old tag BEFORE deleting
+        let tasksWithOldTag = [];
+        
+        for (const space of spacesData.spaces || []) {
+          // Get all tasks in folders
+          const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
+            headers: { 'Authorization': token }
+          });
+          const foldersData = await foldersResponse.json();
+          
+          for (const folder of foldersData.folders || []) {
+            const listsResponse = await fetch(`https://api.clickup.com/api/v2/folder/${folder.id}/list`, {
+              headers: { 'Authorization': token }
+            });
+            const listsData = await listsResponse.json();
+            
+            for (const list of listsData.lists || []) {
+              const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                headers: { 'Authorization': token }
+              });
+              const tasksData = await tasksResponse.json();
+              
+              for (const task of tasksData.tasks || []) {
+                if (task.tags && task.tags.some(t => t.name === tagId)) {
+                  tasksWithOldTag.push({
+                    id: task.id,
+                    tags: task.tags,
+                    spaceId: space.id
+                  });
+                  console.log(`[Worker] Found task ${task.id} with old tag "${tagId}"`);
+                }
+              }
+            }
+          }
+          
+          // Check space lists too
+          const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+            headers: { 'Authorization': token }
+          });
+          const spaceListsData = await spaceListsResponse.json();
+          
+          for (const list of spaceListsData.lists || []) {
+            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+              headers: { 'Authorization': token }
+            });
+            const tasksData = await tasksResponse.json();
+            
+            for (const task of tasksData.tasks || []) {
+              if (task.tags && task.tags.some(t => t.name === tagId)) {
+                tasksWithOldTag.push({
+                  id: task.id,
+                  tags: task.tags,
+                  spaceId: space.id
+                });
+                console.log(`[Worker] Found task ${task.id} with old tag "${tagId}"`);
+              }
+            }
+          }
+        }
+        
+        console.log(`[Worker] Found ${tasksWithOldTag.length} tasks with old tag "${tagId}"`);
+        
+        // Step 3: Delete + Create in each space
         for (const space of spacesData.spaces || []) {
           console.log(`[Worker] Processing tag "${tagId}" -> "${name.trim()}" in space ${space.id}`);
           
@@ -502,14 +564,38 @@ export default {
           }
         }
         
+        // Step 4: Re-assign new tag to all tasks that had the old tag
+        let reassignedTasks = 0;
+        
+        for (const taskInfo of tasksWithOldTag) {
+          console.log(`[Worker] Re-assigning new tag to task ${taskInfo.id}`);
+          
+          // Use Add Tag To Task API instead of PUT task
+          const addTagResponse = await fetch(`https://api.clickup.com/api/v2/task/${taskInfo.id}/tag/${encodeURIComponent(name.trim())}`, {
+            method: 'POST',
+            headers: { 'Authorization': token }
+          });
+          
+          if (addTagResponse.ok) {
+            reassignedTasks++;
+            console.log(`[Worker] Successfully re-assigned new tag to task ${taskInfo.id}`);
+          } else {
+            const taskError = await addTagResponse.text();
+            console.error(`[Worker] Failed to re-assign tag to task ${taskInfo.id}:`, taskError);
+            errors.push(`Task ${taskInfo.id}: ${taskError}`);
+          }
+        }
+        
         console.log(`[Worker] Tag rename completed. Processed ${processedSpaces} spaces.`);
         
         if (processedSpaces > 0) {
           return new Response(JSON.stringify({ 
             success: true, 
-            message: `Tag renamed successfully! Processed ${processedSpaces} spaces.`,
+            message: `Tag renamed successfully! Processed ${processedSpaces} spaces and re-assigned to ${reassignedTasks} tasks.`,
             processedSpaces,
-            method: 'delete-create',
+            reassignedTasks,
+            totalTasksFound: tasksWithOldTag.length,
+            method: 'delete-create-reassign',
             errors: errors.length > 0 ? errors : undefined
           }), {
             headers: {

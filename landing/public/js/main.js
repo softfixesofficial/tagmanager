@@ -829,14 +829,15 @@ class ClickUpTagManager {
         
         // Inform user about the workaround
         const confirmed = confirm(
-            `🔄 Tag Rename Workaround\n\n` +
+            `🔄 Smart Tag Rename\n\n` +
             `ClickUp API doesn't support direct tag renaming.\n\n` +
-            `Our workaround:\n` +
-            `1. Delete the old tag: "${currentName}"\n` +
-            `2. Create a new tag with the new name\n` +
-            `3. Keep the same color\n\n` +
-            `⚠️ Warning: This will remove the tag from all tasks!\n` +
-            `You'll need to manually re-assign the new tag to tasks in ClickUp.\n\n` +
+            `Our smart workaround:\n` +
+            `1. Find all tasks with tag: "${currentName}"\n` +
+            `2. Delete the old tag from space\n` +
+            `3. Create new tag with same color\n` +
+            `4. Automatically re-assign new tag to all found tasks\n\n` +
+            `✅ Your tasks will keep their tags!\n` +
+            `The tag name will change but stay assigned to the same tasks.\n\n` +
             `Do you want to continue?`
         );
         
@@ -874,7 +875,14 @@ class ClickUpTagManager {
                     console.log('[TM] Rename successful:', responseData);
                     
                     // Show success message with details
-                    alert(`✅ Tag Renamed Successfully!\n\nProcessed ${responseData.processedSpaces || 0} spaces.\nMethod: ${responseData.method || 'delete-create'}\n\n⚠️ Remember to re-assign the new tag to tasks in ClickUp!\n\nRefreshing tag list...`);
+                    alert(`✅ Smart Tag Rename Completed!\n\n` +
+                          `📊 Results:\n` +
+                          `• Processed ${responseData.processedSpaces || 0} spaces\n` +
+                          `• Found ${responseData.totalTasksFound || 0} tasks with old tag\n` +
+                          `• Re-assigned to ${responseData.reassignedTasks || 0} tasks\n` +
+                          `• Method: ${responseData.method || 'delete-create-reassign'}\n\n` +
+                          `🎉 Your tasks still have the tag with the new name!\n\n` +
+                          `Refreshing tag list...`);
                     
                     // Refresh tags from server
                     await this.loadTagsFromClickUp();
