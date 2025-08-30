@@ -1287,28 +1287,56 @@ class ClickUpTagManager {
         }
     }
 
-    // Update user profile UI
+    // Update user profile UI with enhanced data
     updateUserProfile(userData) {
+        console.log('[TM] Updating user profile with data:', userData);
+        
         const userName = userData.user?.username || userData.user?.name || 'User';
         const userEmail = userData.user?.email || 'user@example.com';
         const workspaceName = userData.team?.name || 'My Workspace';
         const workspacePlan = userData.team?.plan || 'Free';
+        const profilePicture = userData.user?.profilePicture || null;
+        const userInitials = this.generateInitials(userName);
 
-        // Update user name display
+        // Update user name display with animation
         const userNameElement = document.getElementById('user-name');
         if (userNameElement) {
-            userNameElement.textContent = userName;
+            userNameElement.style.opacity = '0';
+            setTimeout(() => {
+                userNameElement.textContent = userName;
+                userNameElement.style.opacity = '1';
+            }, 150);
         }
 
-        // Update avatar text
-        const avatarText = userName.charAt(0).toUpperCase();
+        // Update avatar with profile picture or initials
         const userAvatarText = document.getElementById('user-avatar-text');
         const profileAvatarText = document.getElementById('profile-avatar-text');
         
-        if (userAvatarText) userAvatarText.textContent = avatarText;
-        if (profileAvatarText) profileAvatarText.textContent = avatarText;
+        if (profilePicture) {
+            // Use profile picture if available
+            const userAvatar = document.querySelector('.user-avatar');
+            const profileAvatar = document.querySelector('.profile-avatar');
+            
+            if (userAvatar) {
+                userAvatar.style.backgroundImage = `url(${profilePicture})`;
+                userAvatar.style.backgroundSize = 'cover';
+                userAvatar.style.backgroundPosition = 'center';
+            }
+            if (profileAvatar) {
+                profileAvatar.style.backgroundImage = `url(${profilePicture})`;
+                profileAvatar.style.backgroundSize = 'cover';
+                profileAvatar.style.backgroundPosition = 'center';
+            }
+            
+            if (userAvatarText) userAvatarText.style.display = 'none';
+            if (profileAvatarText) profileAvatarText.style.display = 'none';
+        } else {
+            // Use initials
+            if (userAvatarText) userAvatarText.textContent = userInitials;
+            if (profileAvatarText) profileAvatarText.textContent = userInitials;
+        }
 
-        // Update profile card
+        // Update profile card with enhanced information
         const profileName = document.getElementById('profile-name');
         const profileEmail = document.getElementById('profile-email');
         const workspaceNameElement = document.getElementById('workspace-name');
@@ -1317,7 +1345,36 @@ class ClickUpTagManager {
         if (profileName) profileName.textContent = userName;
         if (profileEmail) profileEmail.textContent = userEmail;
         if (workspaceNameElement) workspaceNameElement.textContent = workspaceName;
-        if (workspacePlanElement) workspacePlanElement.textContent = `${workspacePlan} Plan`;
+        if (workspacePlanElement) {
+            workspacePlanElement.textContent = `${workspacePlan} Plan`;
+            // Add plan badge styling
+            workspacePlanElement.className = `workspace-plan plan-${workspacePlan.toLowerCase()}`;
+        }
+
+        // Add user role and additional info if available
+        if (userData.user?.role) {
+            const roleElement = document.createElement('div');
+            roleElement.className = 'user-role';
+            roleElement.textContent = userData.user.role;
+            
+            const profileInfo = document.querySelector('.profile-info');
+            if (profileInfo && !document.querySelector('.user-role')) {
+                profileInfo.appendChild(roleElement);
+            }
+        }
+
+        // Store user data globally for other components
+        window.currentUser = userData;
+    }
+
+    // Generate initials from name
+    generateInitials(name) {
+        if (!name) return 'U';
+        const words = name.trim().split(' ');
+        if (words.length === 1) {
+            return words[0].charAt(0).toUpperCase();
+        }
+        return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
     }
 
     // Show statistics panel
@@ -1579,6 +1636,85 @@ function logout() {
     localStorage.removeItem('clickup_access_token');
     showLoginSection();
 }
+
+// Language Switch Function
+function switchLanguage(lang) {
+    console.log('[Lang] Switching to:', lang);
+    
+    const langSwitch = document.getElementById('language-switch');
+    const langButtons = document.querySelectorAll('.lang-btn');
+    
+    // Update button states
+    langButtons.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.lang === lang) {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Update switch animation
+    if (lang === 'tr') {
+        langSwitch.classList.add('tr-active');
+    } else {
+        langSwitch.classList.remove('tr-active');
+    }
+    
+    // Store language preference
+    localStorage.setItem('preferred_language', lang);
+    
+    // Apply language changes (can be extended with actual translations)
+    applyLanguageChanges(lang);
+}
+
+// Apply language changes to UI
+function applyLanguageChanges(lang) {
+    const translations = {
+        en: {
+            'page-title': 'Tag Manager',
+            'panel-title-tags': 'Tags',
+            'panel-title-details': 'Tag Details',
+            'panel-title-data': 'Data',
+            'panel-title-statistics': 'Tag Statistics',
+            'search-placeholder': 'Search tags...',
+            'no-selection': 'Select a tag',
+            'loading': 'Loading...'
+        },
+        tr: {
+            'page-title': 'Etiket Yöneticisi',
+            'panel-title-tags': 'Etiketler',
+            'panel-title-details': 'Etiket Detayları',
+            'panel-title-data': 'Veriler',
+            'panel-title-statistics': 'Etiket İstatistikleri',
+            'search-placeholder': 'Etiket ara...',
+            'no-selection': 'Bir etiket seçin',
+            'loading': 'Yükleniyor...'
+        }
+    };
+    
+    const t = translations[lang] || translations.en;
+    
+    // Update page elements
+    const pageTitle = document.querySelector('.page-title');
+    if (pageTitle) pageTitle.textContent = t['page-title'];
+    
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.placeholder = t['search-placeholder'];
+    
+    // Update panel titles
+    const panelTitles = document.querySelectorAll('.panel-title');
+    panelTitles.forEach((title, index) => {
+        const keys = ['panel-title-tags', 'panel-title-details', 'panel-title-data', 'panel-title-statistics'];
+        if (keys[index] && t[keys[index]]) {
+            title.textContent = t[keys[index]];
+        }
+    });
+}
+
+// Initialize language on load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedLang = localStorage.getItem('preferred_language') || 'en';
+    switchLanguage(savedLang);
+});
 
 // Uygulamayı başlat
 const tagManager = new ClickUpTagManager('tag-manager-section'); 
