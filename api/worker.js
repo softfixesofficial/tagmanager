@@ -121,15 +121,54 @@ export default {
           });
         }
 
-        // Get tags for the team
-        const tagsResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/tag`, {
+        // Get spaces for the team
+        const spacesResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
           headers: { 'Authorization': token }
         });
-        const tagsData = await tagsResponse.json();
+        const spacesData = await spacesResponse.json();
         
-        console.log('[Worker] Tags response:', tagsData);
+        let allTags = [];
         
-        return new Response(JSON.stringify(tagsData), {
+        // Extract tags from tasks in all spaces
+        for (const space of spacesData.spaces || []) {
+          // Get space lists
+          const spaceListsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/list`, {
+            headers: { 'Authorization': token }
+          });
+          const spaceListsData = await spaceListsResponse.json();
+          
+          for (const list of spaceListsData.lists || []) {
+            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+              headers: { 'Authorization': token }
+            });
+            const tasksData = await tasksResponse.json();
+            
+            for (const task of tasksData.tasks || []) {
+              if (task.tags && task.tags.length > 0) {
+                for (const tag of task.tags) {
+                  const tagId = tag.name;
+                  const existingTag = allTags.find(t => t.id === tagId);
+                  if (!existingTag) {
+                    const tagData = {
+                      ...tag,
+                      id: tagId,
+                      list_id: list.id,
+                      space_id: space.id,
+                      task_count: 1
+                    };
+                    allTags.push(tagData);
+                  } else {
+                    existingTag.task_count++;
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        console.log('[Worker] Tags found:', allTags.length);
+        
+        return new Response(JSON.stringify({ tags: allTags }), {
           headers: {
             'Content-Type': 'application/json',
             ...corsHeaders
