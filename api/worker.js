@@ -521,12 +521,19 @@ export default {
               
               for (const task of tasksData.tasks || []) {
                 if (task.tags && task.tags.some(t => t.name === tagId)) {
-                  // Remove old tag and add new tag with same color
+                  // Remove old tag completely and add new tag with same color
                   const updatedTags = task.tags.filter(tag => tag.name !== tagId);
+                  
+                  // Add new tag with same color but different name
                   updatedTags.push({
                     name: name.trim(),
-                    color: oldTagColor || '#4f8cff'
+                    tag_fg: oldTagColor || '#4f8cff',
+                    tag_bg: oldTagColor || '#4f8cff',
+                    creator: task.creator?.id || 194462996
                   });
+                  
+                  console.log(`[Worker] Updating task ${task.id}: removing tag "${tagId}", adding tag "${name.trim()}"`);
+                  console.log(`[Worker] Updated tags:`, updatedTags);
                   
                   const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
                     method: 'PUT',
@@ -539,9 +546,10 @@ export default {
                   
                   if (updateResponse.ok) {
                     updatedTasks++;
-                    console.log(`[Worker] Updated task ${task.id} with new tag name`);
+                    console.log(`[Worker] Successfully updated task ${task.id} with new tag name`);
                   } else {
-                    console.error(`[Worker] Failed to update task ${task.id}:`, await updateResponse.text());
+                    const errorText = await updateResponse.text();
+                    console.error(`[Worker] Failed to update task ${task.id}:`, errorText);
                   }
                 }
               }
@@ -562,12 +570,19 @@ export default {
             
             for (const task of tasksData.tasks || []) {
               if (task.tags && task.tags.some(t => t.name === tagId)) {
-                // Remove old tag and add new tag with same color
+                // Remove old tag completely and add new tag with same color
                 const updatedTags = task.tags.filter(tag => tag.name !== tagId);
+                
+                // Add new tag with same color but different name
                 updatedTags.push({
                   name: name.trim(),
-                  color: oldTagColor || '#4f8cff'
+                  tag_fg: oldTagColor || '#4f8cff',
+                  tag_bg: oldTagColor || '#4f8cff',
+                  creator: task.creator?.id || 194462996
                 });
+                
+                console.log(`[Worker] Updating task ${task.id}: removing tag "${tagId}", adding tag "${name.trim()}"`);
+                console.log(`[Worker] Updated tags:`, updatedTags);
                 
                 const updateResponse = await fetch(`https://api.clickup.com/api/v2/task/${task.id}`, {
                   method: 'PUT',
@@ -580,9 +595,10 @@ export default {
                 
                 if (updateResponse.ok) {
                   updatedTasks++;
-                  console.log(`[Worker] Updated task ${task.id} with new tag name`);
+                  console.log(`[Worker] Successfully updated task ${task.id} with new tag name`);
                 } else {
-                  console.error(`[Worker] Failed to update task ${task.id}:`, await updateResponse.text());
+                  const errorText = await updateResponse.text();
+                  console.error(`[Worker] Failed to update task ${task.id}:`, errorText);
                 }
               }
             }
