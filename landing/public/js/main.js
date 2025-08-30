@@ -825,8 +825,12 @@ class ClickUpTagManager {
     
     // Tag düzenleme
     async editTag(tagId, currentName) {
+        console.log('[TM] editTag called:', { tagId, currentName });
         const newName = prompt('Enter new tag name:', currentName);
+        console.log('[TM] New name entered:', newName);
+        
         if (newName && newName.trim() && newName.trim() !== currentName) {
+            console.log('[TM] Starting tag update API call...');
             try {
                 const token = localStorage.getItem('clickup_access_token');
                 if (!token) {
@@ -834,6 +838,7 @@ class ClickUpTagManager {
                     return;
                 }
                 
+                console.log('[TM] Making PUT request to update tag...');
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'PUT',
                     headers: {
@@ -843,8 +848,11 @@ class ClickUpTagManager {
                     body: JSON.stringify({ name: newName.trim() })
                 });
                 
+                console.log('[TM] Update response:', response.status, response.ok);
+                
                 if (response.ok) {
-            
+                    const responseData = await response.json();
+                    console.log('[TM] Update successful:', responseData);
                     
                     // Update local tag data
                     const tag = this.tags.find(t => t.id === tagId);
@@ -875,8 +883,12 @@ class ClickUpTagManager {
     
     // Tag silme
     async deleteTag(tagId, tagName) {
+        console.log('[TM] deleteTag called:', { tagId, tagName });
         const confirmDelete = confirm(`Are you sure you want to delete tag "${tagName}"? This action cannot be undone.`);
+        console.log('[TM] Delete confirmed:', confirmDelete);
+        
         if (confirmDelete) {
+            console.log('[TM] Starting tag delete API call...');
             try {
                 const token = localStorage.getItem('clickup_access_token');
                 if (!token) {
@@ -884,6 +896,7 @@ class ClickUpTagManager {
                     return;
                 }
                 
+                console.log('[TM] Making DELETE request to delete tag...');
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'DELETE',
                     headers: {
@@ -891,8 +904,11 @@ class ClickUpTagManager {
                     }
                 });
                 
+                console.log('[TM] Delete response:', response.status, response.ok);
+                
                 if (response.ok) {
-            
+                    const responseData = await response.json();
+                    console.log('[TM] Delete successful:', responseData);
                     
                     // Remove from local tags array
                     this.tags = this.tags.filter(t => t.id !== tagId);
