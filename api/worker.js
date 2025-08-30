@@ -384,6 +384,120 @@ export default {
       }
     }
 
+    // Update tag color endpoint (must come before general tag update)
+    if (path.startsWith('/api/clickup/tag/') && path.includes('/color') && request.method === 'PUT') {
+      console.log('[Worker] Tag color update requested');
+      const tagId = path.split('/tag/')[1].split('/color')[0];
+      const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+      
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'No authorization token provided' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+
+      try {
+        const body = await request.json();
+        const { color } = body;
+        
+        if (!color) {
+          return new Response(JSON.stringify({ error: 'Color is required' }), {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        // Get team ID first
+        const teamResponse = await fetch('https://api.clickup.com/api/v2/team', {
+          headers: { 'Authorization': token }
+        });
+        const teamData = await teamResponse.json();
+        const teamId = teamData.teams[0].id;
+
+        // Get all spaces
+        const spacesResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
+          headers: { 'Authorization': token }
+        });
+        const spacesData = await spacesResponse.json();
+
+        let processedSpaces = 0;
+        let errors = [];
+
+        // Update tag color in each space
+        for (const space of spacesData.spaces || []) {
+          console.log(`[Worker] Updating tag "${tagId}" color to "${color}" in space ${space.id}`);
+          
+          // Update tag color using Space Tag API
+          const updateResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/tag/${encodeURIComponent(tagId)}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': token,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              tag: {
+                name: tagId,
+                tag_fg: color,
+                tag_bg: color
+              }
+            })
+          });
+          
+          if (updateResponse.ok) {
+            processedSpaces++;
+            console.log(`[Worker] Successfully updated tag color in space ${space.id}`);
+          } else {
+            const updateError = await updateResponse.text();
+            console.error(`[Worker] Failed to update tag color in space ${space.id}:`, updateError);
+            errors.push(`Update in ${space.name}: ${updateError}`);
+          }
+        }
+
+        if (processedSpaces > 0) {
+          return new Response(JSON.stringify({ 
+            success: true, 
+            message: `Tag color updated successfully! Processed ${processedSpaces} spaces.`,
+            processedSpaces,
+            newColor: color,
+            errors: errors.length > 0 ? errors : undefined
+          }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        } else {
+          return new Response(JSON.stringify({ 
+            success: false, 
+            message: `Failed to update tag color in any space.`,
+            errors
+          }), {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+      } catch (err) {
+        console.error('[Worker] Tag color update error:', err);
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
     // Update tag endpoint - Using Delete + Create workaround
     if (path.startsWith('/api/clickup/tag/') && request.method === 'PUT') {
       console.log('[Worker] Tag update requested - using Delete + Create workaround');
@@ -627,6 +741,8 @@ export default {
         });
       }
     }
+
+
 
     // Delete tag endpoint - Using ClickUp Space Tag API
     if (path.startsWith('/api/clickup/tag/') && request.method === 'DELETE') {

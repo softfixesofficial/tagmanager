@@ -262,7 +262,7 @@ class ClickUpTagManager {
         }
         detailsPanel.innerHTML = `
             <div class="tag-details-header">
-                <div class="tag-details-color" style="background-color: ${this.selectedTag.color || '#4f8cff'}"></div>
+                <div class="tag-details-color" style="background-color: ${this.selectedTag.color || '#4f8cff'}" onclick="tagManager.changeTagColor('${this.selectedTag.name}', '${this.selectedTag.color || '#4f8cff'}')"></div>
                 <div class="tag-details-info">
                     <h3 class="tag-details-title">${this.selectedTag.name}</h3>
                     <div class="tag-details-meta">
@@ -823,6 +823,120 @@ class ClickUpTagManager {
         console.log('[FE] Right panel loading indicators will be replaced by content');
     }
     
+    // Renk değiştirme fonksiyonu
+    async changeTagColor(tagId, currentColor) {
+        console.log('[TM] changeTagColor called:', { tagId, currentColor });
+        
+        // Renk seçenekleri
+        const colorOptions = [
+            '#3E63DD', '#4f8cff', '#6b7280', '#ef4444', '#f59e0b', '#10b981',
+            '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+            '#14b8a6', '#f43f5e', '#a855f7', '#eab308', '#22c55e', '#3b82f6',
+            '#fbbf24', '#34d399', '#f87171', '#a78bfa', '#fb7185', '#67e8f9',
+            '#bef264', '#fdba74', '#86efac', '#c4b5fd', '#fda4af', '#a5f3fc'
+        ];
+        
+        // Renk picker modal'ını oluştur
+        const modal = document.createElement('div');
+        modal.className = 'color-picker-overlay';
+        modal.innerHTML = `
+            <div class="color-picker-modal">
+                <div class="color-picker-header">
+                    <h3 class="color-picker-title">Tag Rengini Değiştir</h3>
+                    <button class="color-picker-close">&times;</button>
+                </div>
+                <div class="color-picker-grid">
+                    ${colorOptions.map(color => `
+                        <div class="color-option ${color === currentColor ? 'selected' : ''}" 
+                             style="background-color: ${color}" 
+                             data-color="${color}"></div>
+                    `).join('')}
+                </div>
+                <div class="color-picker-actions">
+                    <button class="color-picker-btn cancel">İptal</button>
+                    <button class="color-picker-btn apply" disabled>Uygula</button>
+                </div>
+            </div>
+        `;
+        
+        // Modal'ı sayfaya ekle
+        document.body.appendChild(modal);
+        
+        // Seçili renk
+        let selectedColor = currentColor;
+        const applyBtn = modal.querySelector('.color-picker-btn.apply');
+        
+        // Renk seçimi
+        modal.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', () => {
+                // Önceki seçimi kaldır
+                modal.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                // Yeni seçimi işaretle
+                option.classList.add('selected');
+                selectedColor = option.dataset.color;
+                applyBtn.disabled = false;
+            });
+        });
+        
+        // Modal kapatma
+        const closeModal = () => {
+            document.body.removeChild(modal);
+        };
+        
+        modal.querySelector('.color-picker-close').addEventListener('click', closeModal);
+        modal.querySelector('.color-picker-btn.cancel').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        
+        // Uygula butonu
+        applyBtn.addEventListener('click', async () => {
+            if (selectedColor === currentColor) {
+                closeModal();
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('clickup_access_token');
+                if (!token) {
+                    alert('No access token found. Please login again.');
+                    return;
+                }
+                
+                console.log('[TM] Making PUT request to change tag color...');
+                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}/color`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ color: selectedColor })
+                });
+                
+                console.log('[TM] Color change response:', response.status, response.ok);
+                
+                if (response.ok) {
+                    const responseData = await response.json();
+                    console.log('[TM] Color change successful:', responseData);
+                    
+                    alert(`✅ Tag Rengi Değiştirildi!\n\nYeni renk: ${selectedColor}\n\nRefreshing tag list...`);
+                    
+                    closeModal();
+                    await this.loadTagsFromClickUp();
+                    this.render();
+                    
+                } else {
+                    const errorData = await response.json();
+                    console.error('[TM] Color change failed:', errorData);
+                    alert(`❌ Renk değiştirme başarısız: ${errorData.message || errorData.error || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('[FE] Error changing tag color:', error);
+                alert('❌ Renk değiştirme hatası. Lütfen tekrar deneyin.');
+            }
+        });
+    }
+
     // Tag düzenleme - Using Delete + Create workaround
     async editTag(tagId, currentName) {
         console.log('[TM] editTag called:', { tagId, currentName });
