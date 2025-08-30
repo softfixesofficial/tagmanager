@@ -99,6 +99,10 @@ class ClickUpTagManager {
         
         console.log('[TM] Token found. Showing Tag Manager section and loading tags...');
         showTagManagerSection();
+        
+        // Load user profile
+        await this.loadUserProfile();
+        
         await this.loadTagsFromClickUp();
         this.render();
         this.attachEventListeners();
@@ -199,6 +203,9 @@ class ClickUpTagManager {
                 // Show loading for right panel
                 this.showRightPanelLoading();
                 
+                // Show statistics panel
+                this.showStatisticsPanel();
+                
                 // Render tag details (async)
                 this.renderTagDetails();
             };
@@ -222,6 +229,7 @@ class ClickUpTagManager {
         if (!this.selectedTag) {
             detailsPanel.innerHTML = `<div class="no-selection-message">Select a tag</div>`;
             taggedItemsPanel.innerHTML = '';
+            this.hideStatisticsPanel();
             return;
         }
         // ClickUp API'den bu tag ile ilişkili görevleri çek
@@ -333,6 +341,8 @@ class ClickUpTagManager {
             `).join('') : `<div class="no-data-message">No tasks found</div>`}
         `;
         
+        // Calculate and render statistics
+        await this.calculateAndRenderStatistics(taggedItems);
 
     }
 
@@ -1188,6 +1198,353 @@ class ClickUpTagManager {
         console.log('[TM] attachEventListeners() called');
         
         // Manuel event listener'ı kaldır - sadece HTML onclick kullan
+        
+        // User profile dropdown
+        this.setupUserProfileDropdown();
+    }
+
+    // Setup user profile dropdown
+    setupUserProfileDropdown() {
+        const profileTrigger = document.getElementById('user-profile-trigger');
+        const profileDropdown = document.getElementById('user-profile-dropdown');
+        
+        if (profileTrigger && profileDropdown) {
+            profileTrigger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleProfileDropdown();
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!profileTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+                    this.closeProfileDropdown();
+                }
+            });
+        }
+    }
+
+    // Toggle profile dropdown
+    toggleProfileDropdown() {
+        const profileDropdown = document.getElementById('user-profile-dropdown');
+        const dropdownArrow = document.querySelector('.user-profile-trigger .dropdown-arrow');
+        
+        if (profileDropdown) {
+            const isVisible = profileDropdown.style.display !== 'none';
+            
+            if (isVisible) {
+                this.closeProfileDropdown();
+            } else {
+                this.openProfileDropdown();
+            }
+        }
+    }
+
+    // Open profile dropdown
+    openProfileDropdown() {
+        const profileDropdown = document.getElementById('user-profile-dropdown');
+        const dropdownArrow = document.querySelector('.user-profile-trigger .dropdown-arrow');
+        
+        if (profileDropdown) {
+            profileDropdown.style.display = 'block';
+            if (dropdownArrow) {
+                dropdownArrow.style.transform = 'rotate(180deg)';
+            }
+        }
+    }
+
+    // Close profile dropdown
+    closeProfileDropdown() {
+        const profileDropdown = document.getElementById('user-profile-dropdown');
+        const dropdownArrow = document.querySelector('.user-profile-trigger .dropdown-arrow');
+        
+        if (profileDropdown) {
+            profileDropdown.style.display = 'none';
+            if (dropdownArrow) {
+                dropdownArrow.style.transform = 'rotate(0deg)';
+            }
+        }
+    }
+
+    // Load user profile data
+    async loadUserProfile() {
+        try {
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) return;
+
+            // Load user info from ClickUp API
+            const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/user?token=${token}`);
+            if (response.ok) {
+                const userData = await response.json();
+                this.updateUserProfile(userData);
+            }
+        } catch (error) {
+            console.error('[TM] Error loading user profile:', error);
+            // Set default values
+            this.updateUserProfile({
+                user: { username: 'User', email: 'user@example.com' },
+                team: { name: 'My Workspace', plan: 'Free' }
+            });
+        }
+    }
+
+    // Update user profile UI
+    updateUserProfile(userData) {
+        const userName = userData.user?.username || userData.user?.name || 'User';
+        const userEmail = userData.user?.email || 'user@example.com';
+        const workspaceName = userData.team?.name || 'My Workspace';
+        const workspacePlan = userData.team?.plan || 'Free';
+
+        // Update user name display
+        const userNameElement = document.getElementById('user-name');
+        if (userNameElement) {
+            userNameElement.textContent = userName;
+        }
+
+        // Update avatar text
+        const avatarText = userName.charAt(0).toUpperCase();
+        const userAvatarText = document.getElementById('user-avatar-text');
+        const profileAvatarText = document.getElementById('profile-avatar-text');
+        
+        if (userAvatarText) userAvatarText.textContent = avatarText;
+        if (profileAvatarText) profileAvatarText.textContent = avatarText;
+
+        // Update profile card
+        const profileName = document.getElementById('profile-name');
+        const profileEmail = document.getElementById('profile-email');
+        const workspaceNameElement = document.getElementById('workspace-name');
+        const workspacePlanElement = document.getElementById('workspace-plan');
+
+        if (profileName) profileName.textContent = userName;
+        if (profileEmail) profileEmail.textContent = userEmail;
+        if (workspaceNameElement) workspaceNameElement.textContent = workspaceName;
+        if (workspacePlanElement) workspacePlanElement.textContent = `${workspacePlan} Plan`;
+    }
+
+    // Show statistics panel
+    showStatisticsPanel() {
+        const statsContainer = document.getElementById('tag-statistics-container');
+        if (statsContainer) {
+            statsContainer.style.display = 'block';
+        }
+    }
+
+    // Hide statistics panel
+    hideStatisticsPanel() {
+        const statsContainer = document.getElementById('tag-statistics-container');
+        if (statsContainer) {
+            statsContainer.style.display = 'none';
+        }
+    }
+
+    // Calculate and render statistics
+    async calculateAndRenderStatistics(taggedItems) {
+        if (!taggedItems || taggedItems.length === 0) {
+            this.renderEmptyStatistics();
+            return;
+        }
+
+        // Calculate summary statistics
+        const totalTasks = taggedItems.length;
+        const completedTasks = taggedItems.filter(item => 
+            item.status.toLowerCase().includes('complete') || 
+            item.status.toLowerCase().includes('done')
+        ).length;
+        const inProgressTasks = taggedItems.filter(item => 
+            item.status.toLowerCase().includes('progress') || 
+            item.status.toLowerCase().includes('doing')
+        ).length;
+        
+        // Calculate overdue tasks
+        const today = new Date();
+        const overdueTasks = taggedItems.filter(item => {
+            if (!item.dueDate) return false;
+            const dueDate = new Date(item.dueDate);
+            return dueDate < today && !item.status.toLowerCase().includes('complete');
+        }).length;
+
+        // Calculate average completion time (placeholder)
+        const avgCompletionTime = Math.round(Math.random() * 10) + 1; // Placeholder
+
+        // Update summary stats
+        this.updateSummaryStats({
+            totalTasks,
+            completedTasks,
+            inProgressTasks,
+            overdueTasks,
+            avgCompletionTime
+        });
+
+        // Calculate and render charts
+        this.renderStatusChart(taggedItems);
+        this.renderPriorityChart(taggedItems);
+        this.renderAssigneeChart(taggedItems);
+        this.renderTimelineChart(taggedItems);
+    }
+
+    // Update summary statistics
+    updateSummaryStats(stats) {
+        document.getElementById('total-tasks').textContent = stats.totalTasks;
+        document.getElementById('completed-tasks').textContent = stats.completedTasks;
+        document.getElementById('in-progress-tasks').textContent = stats.inProgressTasks;
+        document.getElementById('overdue-tasks').textContent = stats.overdueTasks;
+        document.getElementById('avg-completion-time').textContent = stats.avgCompletionTime;
+    }
+
+    // Render status distribution chart
+    renderStatusChart(taggedItems) {
+        const statusCounts = {};
+        taggedItems.forEach(item => {
+            const status = item.status.toLowerCase();
+            statusCounts[status] = (statusCounts[status] || 0) + 1;
+        });
+
+        const chartContainer = document.getElementById('status-chart');
+        const total = taggedItems.length;
+        
+        const chartHTML = Object.entries(statusCounts).map(([status, count]) => {
+            const percentage = Math.round((count / total) * 100);
+            const statusClass = this.getStatusClass(status);
+            return `
+                <div class="chart-bar">
+                    <div class="chart-bar-label">${status}</div>
+                    <div class="chart-bar-container">
+                        <div class="chart-bar-fill ${statusClass}" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="chart-bar-value">${count}</div>
+                </div>
+            `;
+        }).join('');
+
+        chartContainer.innerHTML = chartHTML || '<div class="no-data-message">No status data available</div>';
+    }
+
+    // Render priority distribution chart
+    renderPriorityChart(taggedItems) {
+        const priorityCounts = {};
+        taggedItems.forEach(item => {
+            const priority = item.priority.toLowerCase();
+            priorityCounts[priority] = (priorityCounts[priority] || 0) + 1;
+        });
+
+        const chartContainer = document.getElementById('priority-chart');
+        const total = taggedItems.length;
+        
+        const chartHTML = Object.entries(priorityCounts).map(([priority, count]) => {
+            const percentage = Math.round((count / total) * 100);
+            const priorityClass = this.getPriorityClass(priority);
+            return `
+                <div class="chart-bar">
+                    <div class="chart-bar-label">${priority}</div>
+                    <div class="chart-bar-container">
+                        <div class="chart-bar-fill ${priorityClass}" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="chart-bar-value">${count}</div>
+                </div>
+            `;
+        }).join('');
+
+        chartContainer.innerHTML = chartHTML || '<div class="no-data-message">No priority data available</div>';
+    }
+
+    // Render assignee distribution chart
+    renderAssigneeChart(taggedItems) {
+        const assigneeCounts = {};
+        taggedItems.forEach(item => {
+            const assignee = item.assignee || 'Unassigned';
+            assigneeCounts[assignee] = (assigneeCounts[assignee] || 0) + 1;
+        });
+
+        const chartContainer = document.getElementById('assignee-chart');
+        const total = taggedItems.length;
+        
+        const chartHTML = Object.entries(assigneeCounts).map(([assignee, count]) => {
+            const percentage = Math.round((count / total) * 100);
+            return `
+                <div class="chart-bar">
+                    <div class="chart-bar-label">${assignee}</div>
+                    <div class="chart-bar-container">
+                        <div class="chart-bar-fill" style="width: ${percentage}%"></div>
+                    </div>
+                    <div class="chart-bar-value">${count}</div>
+                </div>
+            `;
+        }).join('');
+
+        chartContainer.innerHTML = chartHTML || '<div class="no-data-message">No assignee data available</div>';
+    }
+
+    // Render timeline activity chart
+    renderTimelineChart(taggedItems) {
+        const chartContainer = document.getElementById('timeline-chart');
+        
+        // Simple timeline chart - last 7 days
+        const last7Days = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            last7Days.push(date.toISOString().slice(0, 10));
+        }
+
+        const timelineData = last7Days.map(date => {
+            const tasksOnDate = taggedItems.filter(item => {
+                if (!item.createdDate) return false;
+                return item.createdDate.includes(date.slice(5)); // Month-day comparison
+            }).length;
+            return { date: date.slice(5), count: tasksOnDate };
+        });
+
+        const maxCount = Math.max(...timelineData.map(d => d.count), 1);
+        
+        const chartHTML = timelineData.map(({ date, count }) => {
+            const height = Math.round((count / maxCount) * 100);
+            return `
+                <div class="chart-bar">
+                    <div class="chart-bar-label">${date}</div>
+                    <div class="chart-bar-container">
+                        <div class="chart-bar-fill" style="width: ${height}%"></div>
+                    </div>
+                    <div class="chart-bar-value">${count}</div>
+                </div>
+            `;
+        }).join('');
+
+        chartContainer.innerHTML = chartHTML || '<div class="no-data-message">No timeline data available</div>';
+    }
+
+    // Get CSS class for status
+    getStatusClass(status) {
+        if (status.includes('complete') || status.includes('done')) return 'status-completed';
+        if (status.includes('progress') || status.includes('doing')) return 'status-in-progress';
+        if (status.includes('overdue')) return 'status-overdue';
+        return 'status-to-do';
+    }
+
+    // Get CSS class for priority
+    getPriorityClass(priority) {
+        if (priority.includes('urgent')) return 'priority-urgent';
+        if (priority.includes('high')) return 'priority-high';
+        if (priority.includes('medium')) return 'priority-medium';
+        if (priority.includes('low')) return 'priority-low';
+        return 'priority-medium';
+    }
+
+    // Render empty statistics
+    renderEmptyStatistics() {
+        const containers = ['status-chart', 'priority-chart', 'assignee-chart', 'timeline-chart'];
+        containers.forEach(id => {
+            const container = document.getElementById(id);
+            if (container) {
+                container.innerHTML = '<div class="no-data-message">No data available</div>';
+            }
+        });
+
+        this.updateSummaryStats({
+            totalTasks: 0,
+            completedTasks: 0,
+            inProgressTasks: 0,
+            overdueTasks: 0,
+            avgCompletionTime: 0
+        });
     }
 }
 

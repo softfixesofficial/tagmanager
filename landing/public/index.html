@@ -25,15 +25,48 @@
             <div class="page-title-container">
                 <h1 class="page-title">Tag Manager</h1>
             </div>
-            <div class="header-actions">
-                <div class="language-switch">
-                    <button class="lang-btn active" data-lang="en">EN</button>
-                    <button class="lang-btn" data-lang="tr">TR</button>
+            <div class="header-actions-card">
+                <div class="header-actions">
+                    <div class="language-switch">
+                        <button class="lang-btn active" data-lang="en">EN</button>
+                        <button class="lang-btn" data-lang="tr">TR</button>
+                    </div>
+                    <div class="user-profile-container">
+                        <div class="user-profile-trigger" id="user-profile-trigger">
+                            <div class="user-avatar">
+                                <span class="user-avatar-text" id="user-avatar-text">U</span>
+                            </div>
+                            <span class="user-name" id="user-name">Loading...</span>
+                            <span class="dropdown-arrow">▼</span>
+                        </div>
+                        <div class="user-profile-dropdown" id="user-profile-dropdown" style="display: none;">
+                            <div class="profile-card">
+                                <div class="profile-header">
+                                    <div class="profile-avatar">
+                                        <span class="profile-avatar-text" id="profile-avatar-text">U</span>
+                                    </div>
+                                    <div class="profile-info">
+                                        <div class="profile-name" id="profile-name">User Name</div>
+                                        <div class="profile-email" id="profile-email">user@example.com</div>
+                                    </div>
+                                </div>
+                                <div class="profile-workspace">
+                                    <div class="workspace-info">
+                                        <div class="workspace-name" id="workspace-name">Workspace Name</div>
+                                        <div class="workspace-plan" id="workspace-plan">Free Plan</div>
+                                    </div>
+                                </div>
+                                <div class="profile-actions">
+                                    <button class="profile-action-btn" onclick="logout()">
+                                        <span class="action-icon">🚪</span>
+                                        <span>Logout</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <span id="user-name">Loading...</span>
-                <button class="btn btn-secondary" onclick="logout()">Logout</button>
             </div>
-        </div>
         
         <!-- Main Content Grid -->
         <div class="tag-manager-grid" style="grid-template-columns: 1fr 2fr; grid-template-rows: auto;">
@@ -115,9 +148,94 @@
                         <!-- Tagged items will be loaded here -->
                     </div>
                 </div>
-                
-
             </section>
+        </div>
+        
+        <!-- Tag Statistics Panel - Full Width -->
+        <div class="tag-statistics-container" id="tag-statistics-container" style="display: none;">
+            <div class="panel panel-statistics">
+                <div class="panel-title">Tag Statistics</div>
+                <div class="statistics-content">
+                    <!-- Statistics Grid -->
+                    <div class="statistics-grid">
+                        <!-- Task Status Distribution -->
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <h3>Task Status Distribution</h3>
+                                <div class="stat-card-icon">📊</div>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="chart-container" id="status-chart">
+                                    <div class="no-data-message">Select a tag to view statistics</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Priority Distribution -->
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <h3>Priority Distribution</h3>
+                                <div class="stat-card-icon">🎯</div>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="chart-container" id="priority-chart">
+                                    <div class="no-data-message">Select a tag to view statistics</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Assignee Distribution -->
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <h3>Assignee Distribution</h3>
+                                <div class="stat-card-icon">👥</div>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="chart-container" id="assignee-chart">
+                                    <div class="no-data-message">Select a tag to view statistics</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Timeline Activity -->
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <h3>Timeline Activity</h3>
+                                <div class="stat-card-icon">📅</div>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="chart-container" id="timeline-chart">
+                                    <div class="no-data-message">Select a tag to view statistics</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Stats -->
+                    <div class="summary-stats">
+                        <div class="summary-stat-item">
+                            <div class="summary-stat-value" id="total-tasks">0</div>
+                            <div class="summary-stat-label">Total Tasks</div>
+                        </div>
+                        <div class="summary-stat-item">
+                            <div class="summary-stat-value" id="completed-tasks">0</div>
+                            <div class="summary-stat-label">Completed</div>
+                        </div>
+                        <div class="summary-stat-item">
+                            <div class="summary-stat-value" id="in-progress-tasks">0</div>
+                            <div class="summary-stat-label">In Progress</div>
+                        </div>
+                        <div class="summary-stat-item">
+                            <div class="summary-stat-value" id="overdue-tasks">0</div>
+                            <div class="summary-stat-label">Overdue</div>
+                        </div>
+                        <div class="summary-stat-item">
+                            <div class="summary-stat-value" id="avg-completion-time">0</div>
+                            <div class="summary-stat-label">Avg. Completion (days)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     
