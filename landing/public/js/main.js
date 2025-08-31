@@ -2057,7 +2057,7 @@ class ClickUpTagManager {
             ).length;
             
             return `
-                <div class="created-tag-item">
+                <div class="created-tag-item" draggable="true" data-tag-name="${tagName}" data-tag-color="${tag.tag_bg || tag.color || '#4f8cff'}">
                     <div class="created-tag-info">
                         <div class="created-tag-color" style="background-color: ${tag.tag_bg || tag.color || '#4f8cff'}"></div>
                         <div class="created-tag-name">${tagName}</div>
@@ -2074,6 +2074,9 @@ class ClickUpTagManager {
                 </div>
             `;
         }).join('');
+        
+        // Add drag event listeners to the newly created tag items
+        this.initializeDragAndDrop(containerId);
     }
     
     // Load all tasks for the tasks tab
@@ -2279,6 +2282,240 @@ class ClickUpTagManager {
         this.currentTaskFilters = { applyFilters, tasks };
     }
     
+    // Initialize drag and drop functionality for tags
+    initializeDragAndDrop(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const tagItems = container.querySelectorAll('.created-tag-item');
+        
+        tagItems.forEach(tagItem => {
+            // Remove existing event listeners
+            tagItem.removeEventListener('dragstart', this.handleDragStart);
+            tagItem.removeEventListener('dragend', this.handleDragEnd);
+            
+            // Add new event listeners
+            tagItem.addEventListener('dragstart', this.handleDragStart.bind(this));
+            tagItem.addEventListener('dragend', this.handleDragEnd.bind(this));
+        });
+    }
+    
+    // Handle drag start
+    handleDragStart(e) {
+        const tagName = e.target.dataset.tagName;
+        const tagColor = e.target.dataset.tagColor;
+        
+        e.dataTransfer.setData('text/plain', JSON.stringify({
+            tagName: tagName,
+            tagColor: tagColor
+        }));
+        
+        e.target.classList.add('dragging');
+        
+        // Create drag feedback
+        this.createDragFeedback(e.target, tagName, tagColor);
+    }
+    
+    // Handle drag end
+    handleDragEnd(e) {
+        e.target.classList.remove('dragging');
+        this.removeDragFeedback();
+    }
+    
+    // Create drag feedback element
+    createDragFeedback(tagElement, tagName, tagColor) {
+        const feedback = document.createElement('div');
+        feedback.className = 'drag-feedback';
+        feedback.textContent = `Adding tag: ${tagName}`;
+        feedback.style.backgroundColor = tagColor + '20';
+        feedback.style.borderColor = tagColor;
+        feedback.style.color = tagColor;
+        
+        document.body.appendChild(feedback);
+        this.dragFeedback = feedback;
+        
+        // Update position on mouse move
+        document.addEventListener('mousemove', this.updateDragFeedback.bind(this));
+    }
+    
+    // Update drag feedback position
+    updateDragFeedback(e) {
+        if (this.dragFeedback) {
+            this.dragFeedback.style.left = (e.clientX + 10) + 'px';
+            this.dragFeedback.style.top = (e.clientY + 10) + 'px';
+        }
+    }
+    
+    // Remove drag feedback
+    removeDragFeedback() {
+        if (this.dragFeedback) {
+            document.body.removeChild(this.dragFeedback);
+            this.dragFeedback = null;
+        }
+        document.removeEventListener('mousemove', this.updateDragFeedback);
+    }
+    
+    // Initialize task card drop zones
+    initializeTaskCardDropZones() {
+        const taskCards = document.querySelectorAll('.task-card');
+        
+        taskCards.forEach(card => {
+            // Remove existing event listeners
+            card.removeEventListener('dragover', this.handleDragOver);
+            card.removeEventListener('dragleave', this.handleDragLeave);
+            card.removeEventListener('drop', this.handleDrop);
+            
+            // Add new event listeners
+            card.addEventListener('dragover', this.handleDragOver.bind(this));
+            card.addEventListener('dragleave', this.handleDragLeave.bind(this));
+            card.addEventListener('drop', this.handleDrop.bind(this));
+        });
+    }
+    
+    // Handle drag over
+    handleDragOver(e) {
+        e.preventDefault();
+        e.currentTarget.classList.add('drag-over');
+    }
+    
+    // Handle drag leave
+    handleDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+    
+    // Handle drop
+    async handleDrop(e) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+        
+        const taskId = e.currentTarget.dataset.taskId;
+        const data = e.dataTransfer.getData('text/plain');
+        
+        if (!taskId || !data) return;
+        
+        try {
+            const { tagName } = JSON.parse(data);
+            
+            console.log(`[TM] Adding tag "${tagName}" to task "${taskId}"`);
+            
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) {
+                alert('No access token found. Please login again.');
+                return;
+            }
+            
+            // Show loading on the task card
+            const taskCard = e.currentTarget;
+            const originalContent = taskCard.innerHTML;
+            taskCard.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Adding tag...</div>
+                </div>
+            `;
+            
+            // Add tag to task via API
+            const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/task/${taskId}/tag/${encodeURIComponent(tagName)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('[TM] Tag added to task successfully:', result);
+                
+                // Refresh the task display and tag lists
+                await this.loadAllTasks();
+                await this.refreshCreatedTags();
+                
+                // Show success feedback
+                taskCard.style.backgroundColor = '#f0f9ff';
+                setTimeout(() => {
+                    taskCard.style.backgroundColor = '';
+                }, 1000);
+                
+            } else {
+                const error = await response.json();
+                console.error('[TM] Failed to add tag to task:', error);
+                alert(`Failed to add tag: ${error.error || 'Unknown error'}`);
+                
+                // Restore original content
+                taskCard.innerHTML = originalContent;
+            }
+            
+        } catch (error) {
+            console.error('[TM] Error adding tag to task:', error);
+            alert('Failed to add tag. Please try again.');
+            
+            // Restore original content
+            taskCard.innerHTML = originalContent;
+        }
+    }
+    
+    // Remove tag from task
+    async removeTagFromTask(taskId, tagName) {
+        try {
+            console.log(`[TM] Removing tag "${tagName}" from task "${taskId}"`);
+            
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) {
+                alert('No access token found. Please login again.');
+                return;
+            }
+            
+            // Show loading on the task card
+            const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+            if (taskCard) {
+                const originalContent = taskCard.innerHTML;
+                taskCard.innerHTML = `
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">Removing tag...</div>
+                    </div>
+                `;
+                
+                // Remove tag from task via API
+                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/task/${taskId}/tag/${encodeURIComponent(tagName)}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('[TM] Tag removed from task successfully:', result);
+                    
+                    // Refresh the task display and tag lists
+                    await this.loadAllTasks();
+                    await this.refreshCreatedTags();
+                    
+                    // Show success feedback
+                    taskCard.style.backgroundColor = '#fef2f2';
+                    setTimeout(() => {
+                        taskCard.style.backgroundColor = '';
+                    }, 1000);
+                    
+                } else {
+                    const error = await response.json();
+                    console.error('[TM] Failed to remove tag from task:', error);
+                    alert(`Failed to remove tag: ${error.error || 'Unknown error'}`);
+                    
+                    // Restore original content
+                    taskCard.innerHTML = originalContent;
+                }
+            }
+            
+        } catch (error) {
+            console.error('[TM] Error removing tag from task:', error);
+            alert('Failed to remove tag. Please try again.');
+        }
+    }
+    
     // Render filtered tasks
     renderFilteredTasks(filteredTasks) {
         const tasksGrid = document.getElementById('all-tasks-grid');
@@ -2290,7 +2527,7 @@ class ClickUpTagManager {
         }
         
         tasksGrid.innerHTML = filteredTasks.map(task => `
-            <div class="task-card">
+            <div class="task-card" data-task-id="${task.id}">
                 <div class="task-card-header">
                     <div class="task-card-id">${task.displayId || task.id}</div>
                     <div class="task-card-badges">
@@ -2319,11 +2556,21 @@ class ClickUpTagManager {
                 </div>
                 ${task.tags && task.tags.length > 0 ? `
                     <div class="task-tags">
-                        ${task.tags.map(tag => `<div class="task-tag">${tag.name}</div>`).join('')}
+                        ${task.tags.map(tag => `
+                            <div class="task-tag">
+                                ${tag.name}
+                                <button class="remove-tag" onclick="tagManager.removeTagFromTask('${task.id}', '${tag.name}')" title="Remove tag">
+                                    ✕
+                                </button>
+                            </div>
+                        `).join('')}
                     </div>
                 ` : ''}
             </div>
         `).join('');
+        
+        // Add drop event listeners to task cards
+        this.initializeTaskCardDropZones();
     }
     
     // Update filter options based on actual task data

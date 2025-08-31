@@ -1060,6 +1060,114 @@ export default {
         });
       }
     }
+    
+    // Add tag to task
+    if (path.match(/^\/api\/clickup\/task\/[^\/]+\/tag\/[^\/]+$/) && request.method === 'POST') {
+      const pathParts = path.split('/');
+      const taskId = pathParts[4];
+      const tagName = pathParts[6];
+      const token = request.headers.get('authorization')?.replace('Bearer ', '');
+      
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'No authorization token provided' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+      
+      console.log(`[Worker] Adding tag "${tagName}" to task "${taskId}"`);
+      
+      const response = await fetch(`https://api.clickup.com/api/v2/task/${taskId}/tag/${encodeURIComponent(tagName)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`[Worker] Failed to add tag to task: ${response.status} - ${errorData}`);
+        return new Response(JSON.stringify({
+          error: 'Failed to add tag to task',
+          details: errorData,
+          status: response.status,
+          statusText: response.statusText
+        }), {
+          status: response.status,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+      
+      const result = await response.json();
+      console.log(`[Worker] Tag added to task successfully:`, result);
+      return new Response(JSON.stringify(result), {
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
+      });
+    }
+    
+    // Remove tag from task
+    if (path.match(/^\/api\/clickup\/task\/[^\/]+\/tag\/[^\/]+$/) && request.method === 'DELETE') {
+      const pathParts = path.split('/');
+      const taskId = pathParts[4];
+      const tagName = pathParts[6];
+      const token = request.headers.get('authorization')?.replace('Bearer ', '');
+      
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'No authorization token provided' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+      
+      console.log(`[Worker] Removing tag "${tagName}" from task "${taskId}"`);
+      
+      const response = await fetch(`https://api.clickup.com/api/v2/task/${taskId}/tag/${encodeURIComponent(tagName)}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error(`[Worker] Failed to remove tag from task: ${response.status} - ${errorData}`);
+        return new Response(JSON.stringify({
+          error: 'Failed to remove tag from task',
+          details: errorData,
+          status: response.status,
+          statusText: response.statusText
+        }), {
+          status: response.status,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+      
+      const result = await response.json();
+      console.log(`[Worker] Tag removed from task successfully:`, result);
+      return new Response(JSON.stringify(result), {
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
+      });
+    }
 
     // 404 for unknown routes
     console.log('[Worker] 404 - Route not found:', path);

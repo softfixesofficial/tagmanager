@@ -2704,12 +2704,18 @@ body {
     border: 1px solid #e5e7eb;
     transition: all 0.3s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    position: relative;
 }
 
 .task-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     border-color: #4f8cff;
+}
+
+.task-card.drag-over {
+    border: 2px dashed #4f8cff;
+    background-color: #f8f9ff;
 }
 
 .task-card-header {
@@ -2780,12 +2786,32 @@ body {
 }
 
 .task-tag {
-    padding: 0.25rem 0.5rem;
+    display: inline-flex;
+    align-items: center;
     background: #f3f4f6;
     color: #6b7280;
+    padding: 0.25rem 0.5rem;
     border-radius: 12px;
     font-size: 0.75rem;
     font-weight: 500;
+    position: relative;
+}
+
+.task-tag .remove-tag {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    margin-left: 4px;
+    padding: 0;
+    font-size: 10px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.task-tag .remove-tag:hover {
+    opacity: 1;
+    color: #d93025;
 }
 
 /* Responsive Design for Management Section */
@@ -2816,4 +2842,36 @@ body {
     .task-filter-select {
         flex: 1;
     }
+}
+
+/* Drag & Drop Styles */
+.created-tag-item {
+    cursor: grab;
+    transition: all 0.2s ease;
+}
+
+.created-tag-item:hover {
+    transform: scale(1.02);
+}
+
+.created-tag-item:active {
+    cursor: grabbing;
+}
+
+.created-tag-item.dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+}
+
+/* Drag drop feedback */
+.drag-feedback {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    background: rgba(79, 140, 255, 0.1);
+    border: 2px dashed #4f8cff;
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 12px;
+    color: #4f8cff;
 }

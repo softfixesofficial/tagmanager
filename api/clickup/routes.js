@@ -724,4 +724,86 @@ router.delete('/tag/:tagId', async (req, res) => {
     }
 });
 
+// Add tag to task
+router.post('/task/:taskId/tag/:tagName', async (req, res) => {
+    try {
+        const { taskId, tagName } = req.params;
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({ error: 'No authorization token provided' });
+        }
+        
+        console.log(`[API] Adding tag "${tagName}" to task "${taskId}"`);
+        
+        const response = await fetch(`https://api.clickup.com/api/v2/task/${taskId}/tag/${encodeURIComponent(tagName)}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': token,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error(`[API] Failed to add tag to task: ${response.status} - ${errorData}`);
+            return res.status(response.status).json({
+                error: 'Failed to add tag to task',
+                details: errorData,
+                status: response.status,
+                statusText: response.statusText
+            });
+        }
+        
+        const result = await response.json();
+        console.log(`[API] Tag added to task successfully:`, result);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('[API] Error adding tag to task:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Remove tag from task
+router.delete('/task/:taskId/tag/:tagName', async (req, res) => {
+    try {
+        const { taskId, tagName } = req.params;
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({ error: 'No authorization token provided' });
+        }
+        
+        console.log(`[API] Removing tag "${tagName}" from task "${taskId}"`);
+        
+        const response = await fetch(`https://api.clickup.com/api/v2/task/${taskId}/tag/${encodeURIComponent(tagName)}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': token,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error(`[API] Failed to remove tag from task: ${response.status} - ${errorData}`);
+            return res.status(response.status).json({
+                error: 'Failed to remove tag from task',
+                details: errorData,
+                status: response.status,
+                statusText: response.statusText
+            });
+        }
+        
+        const result = await response.json();
+        console.log(`[API] Tag removed from task successfully:`, result);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('[API] Error removing tag from task:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;
