@@ -539,7 +539,7 @@ body {
     border: 1.5px solid var(--border);
     border-radius: 10px;
     font-size: 1.05rem;
-    background: var(--primary-light);
+    background: var(--card-bg);
     color: var(--text-main);
     transition: var(--transition);
 }
@@ -557,7 +557,7 @@ body {
 }
 
 .tag-item {
-    background: var(--card-bg);
+    background: var(--background);
     border-radius: 10px;
     padding: 0.7rem 1.2rem;
     cursor: pointer;
@@ -569,7 +569,7 @@ body {
     box-shadow: var(--shadow-sm);
 }
 .tag-item:hover {
-    background: var(--panel-background);
+    background: var(--card-bg);
     border-color: var(--primary);
 }
 
@@ -916,20 +916,20 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 8px 12px;
-    background: #f8f9fa;
-    border: 1px solid #e1e5e9;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     border-radius: 6px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 500;
-    color: #374151;
+    color: var(--text-main);
     margin-bottom: 8px;
     transition: all 0.2s ease;
 }
 
 .all-tags-toggle:hover {
-    background: #e9ecef;
-    border-color: #adb5bd;
+    background: var(--panel-background);
+    border-color: var(--primary);
 }
 
 .all-label {
@@ -938,7 +938,7 @@ body {
 
 .toggle-arrow {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-secondary);
     transition: transform 0.2s ease;
     margin-right: auto;
     margin-left: 8px;
@@ -955,15 +955,15 @@ body {
 .all-tags-list {
     padding: 8px;
     min-height: 60px;
-    background: #fafafa;
-    border: 2px dashed #d1d5db;
+    background: var(--background);
+    border: 2px dashed var(--border);
     border-radius: 4px;
     margin-bottom: 12px;
 }
 
 .all-tags-list.drag-over {
-    background: #dbeafe;
-    border-color: #3b82f6;
+    background: var(--card-bg);
+    border-color: var(--primary);
 }
 
 /* Data Subtitle */
@@ -1268,7 +1268,7 @@ body {
     height: 24px;
     border-radius: 50%;
     background: var(--primary);
-    border: 2px solid #fff;
+    border: 2px solid var(--border);
     box-shadow: var(--shadow-sm);
     transition: transform 0.2s ease;
 }

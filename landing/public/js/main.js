@@ -2524,9 +2524,13 @@ class ClickUpTagManager {
         try {
             console.log(`[TM] Removing tag "${tagName}" from task "${taskId}"`);
             
+            // Set flag to prevent path loading during tag removal
+            this.isRemovingTag = true;
+            
             const token = localStorage.getItem('clickup_access_token');
             if (!token) {
                 alert('No access token found. Please login again.');
+                this.isRemovingTag = false;
                 return;
             }
             
@@ -2605,6 +2609,9 @@ class ClickUpTagManager {
         } catch (error) {
             console.error('[TM] Error removing tag from task:', error);
             alert('Failed to remove tag. Please try again.');
+        } finally {
+            // Reset flag
+            this.isRemovingTag = false;
         }
     }
     
@@ -2626,18 +2633,18 @@ class ClickUpTagManager {
                     const data = await response.json();
                     const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
                     if (pathElement) {
-                        pathElement.textContent = data.fullPath;
-                        pathElement.title = data.fullPath; // Show full path on hover
+                        pathElement.textContent = data.fullPath || 'Path not available';
+                        pathElement.title = data.fullPath || 'Path not available'; // Show full path on hover
                     }
                 } else {
-                    console.error(`[TM] Failed to load path for task ${task.id}`);
+                    console.warn(`[TM] Failed to load path for task ${task.id} - Status: ${response.status}`);
                     const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
                     if (pathElement) {
                         pathElement.textContent = 'Path not available';
                     }
                 }
             } catch (error) {
-                console.error(`[TM] Error loading path for task ${task.id}:`, error);
+                console.warn(`[TM] Error loading path for task ${task.id}:`, error.message);
                 const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
                 if (pathElement) {
                     pathElement.textContent = 'Path not available';
@@ -2651,9 +2658,13 @@ class ClickUpTagManager {
         try {
             console.log(`[TM] Removing all tags from task "${taskId}"`);
             
+            // Set flag to prevent path loading during tag removal
+            this.isRemovingTag = true;
+            
             const token = localStorage.getItem('clickup_access_token');
             if (!token) {
                 alert('No access token found. Please login again.');
+                this.isRemovingTag = false;
                 return;
             }
             
@@ -2742,6 +2753,9 @@ class ClickUpTagManager {
         } catch (error) {
             console.error('[TM] Error removing all tags from task:', error);
             alert('Failed to remove tags. Please try again.');
+        } finally {
+            // Reset flag
+            this.isRemovingTag = false;
         }
     }
     
@@ -2806,8 +2820,10 @@ class ClickUpTagManager {
         // Add drop event listeners to task cards
         this.initializeTaskCardDropZones();
         
-        // Load task path information for each task
-        this.loadTaskPaths(filteredTasks);
+        // Load task path information for each task (only if not in tag removal context)
+        if (!this.isRemovingTag) {
+            this.loadTaskPaths(filteredTasks);
+        }
     }
     
     // Update filter options based on actual task data
