@@ -24,26 +24,54 @@ router.get('/user', async (req, res) => {
     try {
         console.log('[BE] Fetching user data with token:', token.substring(0, 20) + '...');
         
-        // Get user data from ClickUp API
-        const userResponse = await fetch('https://api.clickup.com/api/v2/user', {
-            headers: { 'Authorization': token }
+        // First get teams to get team ID
+        const teamsResponse = await fetch('https://api.clickup.com/api/v2/team', {
+            headers: { 
+                'Authorization': token,
+                'accept': 'application/json'
+            }
+        });
+        
+        if (!teamsResponse.ok) {
+            const errorText = await teamsResponse.text();
+            console.error('[BE] Teams API error:', teamsResponse.status, errorText);
+            throw new Error(`Teams API failed: ${teamsResponse.status} - ${errorText}`);
+        }
+        
+        const teamsData = await teamsResponse.json();
+        console.log('[BE] Teams data:', JSON.stringify(teamsData, null, 2));
+        
+        if (!teamsData.teams || teamsData.teams.length === 0) {
+            throw new Error('No teams found for user');
+        }
+        
+        const teamId = teamsData.teams[0].id;
+        console.log('[BE] Using team ID:', teamId);
+        
+        // Now get user data with team ID
+        const userResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/user?include_shared=false`, {
+            headers: { 
+                'Authorization': token,
+                'accept': 'application/json'
+            }
         });
         
         if (!userResponse.ok) {
             const errorText = await userResponse.text();
-            console.error('[BE] ClickUp API error:', userResponse.status, errorText);
-            throw new Error(`ClickUp API failed: ${userResponse.status} - ${errorText}`);
+            console.error('[BE] User API error:', userResponse.status, errorText);
+            throw new Error(`User API failed: ${userResponse.status} - ${errorText}`);
         }
         
         const userData = await userResponse.json();
         console.log('[BE] Raw ClickUp user data:', JSON.stringify(userData, null, 2));
         
         // Extract user information from the response
-        const user = userData.member?.user || userData.user;
-        
-        if (!user) {
+        const users = userData.members || userData.users || [];
+        if (users.length === 0) {
             throw new Error('No user data found in response');
         }
+        
+        const user = users[0].user || users[0];
         
         // Return clean user data
         const responseData = {

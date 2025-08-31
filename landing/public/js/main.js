@@ -1715,10 +1715,10 @@ function logout() {
     showLoginSection();
 }
 
-// Toggle Language Function for new switch
+// Toggle Language Function for TR/EN switch
 function toggleLanguage() {
     const toggle = document.getElementById('lang-toggle');
-    const lang = toggle.checked ? 'ar' : 'en';
+    const lang = toggle.checked ? 'en' : 'tr';
     
     console.log('[Lang] Toggling to:', lang);
     
@@ -1752,25 +1752,25 @@ function applyLanguageChanges(lang) {
             'no-data-available': 'No data available',
             'select-tag-to-view': 'Select a tag to view statistics'
         },
-        ar: {
-            'page-title': 'مدير العلامات',
-            'panel-title-tags': 'العلامات',
-            'panel-title-details': 'تفاصيل العلامة',
-            'panel-title-data': 'البيانات',
-            'panel-title-statistics': 'إحصائيات العلامة',
-            'search-placeholder': 'البحث عن العلامات...',
-            'no-selection': 'اختر علامة',
-            'loading': 'جاري التحميل...',
-            'logout': 'تسجيل الخروج',
-            'total-tasks': 'إجمالي المهام',
-            'completed': 'مكتمل',
-            'in-progress': 'قيد التنفيذ',
-            'unassigned': 'غير مخصص',
-            'task-status-distribution': 'توزيع حالة المهام',
-            'priority-distribution': 'توزيع الأولوية',
-            'related-tasks': 'المهام ذات الصلة',
-            'no-data-available': 'لا توجد بيانات متاحة',
-            'select-tag-to-view': 'اختر علامة لعرض الإحصائيات'
+        tr: {
+            'page-title': 'Etiket Yöneticisi',
+            'panel-title-tags': 'Etiketler',
+            'panel-title-details': 'Etiket Detayları',
+            'panel-title-data': 'Veriler',
+            'panel-title-statistics': 'Etiket İstatistikleri',
+            'search-placeholder': 'Etiket ara...',
+            'no-selection': 'Bir etiket seçin',
+            'loading': 'Yükleniyor...',
+            'logout': 'Çıkış Yap',
+            'total-tasks': 'Toplam Görev',
+            'completed': 'Tamamlanan',
+            'in-progress': 'Devam Eden',
+            'unassigned': 'Atanmamış',
+            'task-status-distribution': 'Görev Durumu Dağılımı',
+            'priority-distribution': 'Öncelik Dağılımı',
+            'related-tasks': 'İlgili Görevler',
+            'no-data-available': 'Veri bulunamadı',
+            'select-tag-to-view': 'İstatistikleri görmek için bir etiket seçin'
         }
     };
     
@@ -1821,20 +1821,20 @@ function applyLanguageChanges(lang) {
 
 // Initialize language on load
 document.addEventListener('DOMContentLoaded', () => {
-    const savedLang = localStorage.getItem('preferred_language') || 'en';
+    const savedLang = localStorage.getItem('preferred_language') || 'tr';
     const toggle = document.getElementById('lang-toggle');
     if (toggle) {
-        toggle.checked = (savedLang === 'ar');
+        toggle.checked = (savedLang === 'en');
         applyLanguageChanges(savedLang);
     }
 });
 
 // Also initialize when the tag manager loads
 window.addEventListener('load', () => {
-    const savedLang = localStorage.getItem('preferred_language') || 'en';
+    const savedLang = localStorage.getItem('preferred_language') || 'tr';
     const toggle = document.getElementById('lang-toggle');
     if (toggle) {
-        toggle.checked = (savedLang === 'ar');
+        toggle.checked = (savedLang === 'en');
         applyLanguageChanges(savedLang);
     }
 });
