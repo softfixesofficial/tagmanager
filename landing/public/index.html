@@ -234,6 +234,107 @@
                 </div>
             </div>
         </div>
+        
+        <!-- New Tab Section Below Statistics -->
+        <div class="tab-section-container" id="tab-section-container" style="display: none;">
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="tag-management">
+                    <span class="tab-icon">🏷️</span>
+                    <span class="tab-label">Tag Management</span>
+                </button>
+                <button class="tab-btn" data-tab="all-tasks">
+                    <span class="tab-icon">📋</span>
+                    <span class="tab-label">All Tasks</span>
+                </button>
+            </div>
+            
+            <div class="tab-content-container">
+                <!-- Tag Management Tab -->
+                <div class="tab-content active" id="tag-management-tab">
+                    <div class="tag-management-grid">
+                        <!-- Tag Creation Section -->
+                        <div class="tag-creation-section">
+                            <h3 class="section-title">Create New Tag</h3>
+                            <form class="tag-creation-form" id="tag-creation-form">
+                                <div class="form-group">
+                                    <label for="new-tag-name">Tag Name</label>
+                                    <input type="text" id="new-tag-name" class="form-control" placeholder="Enter tag name..." required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tag Color</label>
+                                    <div class="color-selection-container">
+                                        <div class="selected-color-display" id="selected-color-display">
+                                            <div class="color-preview" id="color-preview" style="background-color: #4f8cff;"></div>
+                                            <span class="color-label">#4f8cff</span>
+                                        </div>
+                                        <button type="button" class="color-picker-trigger" id="color-picker-trigger">Choose Color</button>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn-create-tag">Create Tag</button>
+                            </form>
+                        </div>
+                        
+                        <!-- Created Tags Display -->
+                        <div class="created-tags-section">
+                            <h3 class="section-title">Created Tags</h3>
+                            <div class="tags-category-container">
+                                <div class="tags-category">
+                                    <h4 class="category-title">
+                                        <span class="category-icon">✅</span>
+                                        <span>Used Tags</span>
+                                        <span class="category-count" id="used-tags-count">0</span>
+                                    </h4>
+                                    <div class="tags-list" id="used-tags-list">
+                                        <div class="no-tags-message">No used tags yet</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="tags-category">
+                                    <h4 class="category-title">
+                                        <span class="category-icon">⚪</span>
+                                        <span>Unused Tags</span>
+                                        <span class="category-count" id="unused-tags-count">0</span>
+                                    </h4>
+                                    <div class="tags-list" id="unused-tags-list">
+                                        <div class="no-tags-message">No unused tags yet</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- All Tasks Tab -->
+                <div class="tab-content" id="all-tasks-tab" style="display: none;">
+                    <div class="all-tasks-section">
+                        <div class="tasks-header">
+                            <h3 class="section-title">All Tasks</h3>
+                            <div class="tasks-filters">
+                                <select class="task-filter-select" id="task-status-filter">
+                                    <option value="all">All Status</option>
+                                    <option value="to-do">To Do</option>
+                                    <option value="in-progress">In Progress</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                                <select class="task-filter-select" id="task-priority-filter">
+                                    <option value="all">All Priority</option>
+                                    <option value="urgent">Urgent</option>
+                                    <option value="high">High</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="low">Low</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="all-tasks-grid" id="all-tasks-grid">
+                            <div class="loading-container">
+                                <div class="loading-spinner"></div>
+                                <div class="loading-text">Loading all tasks...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script src="/js/drag-drop.js"></script>

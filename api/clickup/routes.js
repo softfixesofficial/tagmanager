@@ -223,7 +223,7 @@ router.get('/tasks', async (req, res) => {
                         const listsData = await listsResponse.json();
                         
                         for (const list of listsData.lists || []) {
-                            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
                                 headers: { 'Authorization': token }
                             });
                             const tasksData = await tasksResponse.json();
@@ -237,7 +237,7 @@ router.get('/tasks', async (req, res) => {
                     const spaceListsData = await spaceListsResponse.json();
                     
                     for (const list of spaceListsData.lists || []) {
-                        const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                        const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
                             headers: { 'Authorization': token }
                         });
                         const tasksData = await tasksResponse.json();
@@ -300,7 +300,7 @@ router.get('/tags', async (req, res) => {
                 const listsData = await listsResponse.json();
                 
                 for (const list of listsData.lists || []) {
-                    const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                    const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
                         headers: { 'Authorization': token }
                     });
                     const tasksData = await tasksResponse.json();
@@ -346,7 +346,7 @@ router.get('/tags', async (req, res) => {
             const spaceListsData = await spaceListsResponse.json();
             
             for (const list of spaceListsData.lists || []) {
-                const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
                     headers: { 'Authorization': token }
                 });
                 const tasksData = await tasksResponse.json();
@@ -438,7 +438,7 @@ router.put('/tag/:tagId', express.json(), async (req, res) => {
                 const listsData = await listsResponse.json();
                 
                 for (const list of listsData.lists || []) {
-                    const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                    const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
                         headers: { 'Authorization': token }
                     });
                     const tasksData = await tasksResponse.json();
@@ -474,7 +474,7 @@ router.put('/tag/:tagId', express.json(), async (req, res) => {
             const spaceListsData = await spaceListsResponse.json();
             
             for (const list of spaceListsData.lists || []) {
-                const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
                     headers: { 'Authorization': token }
                 });
                 const tasksData = await tasksResponse.json();
@@ -555,7 +555,7 @@ router.delete('/tag/:tagId', async (req, res) => {
                 const listsData = await listsResponse.json();
                 
                 for (const list of listsData.lists || []) {
-                    const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                    const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
                         headers: { 'Authorization': token }
                     });
                     const tasksData = await tasksResponse.json();
@@ -587,7 +587,7 @@ router.delete('/tag/:tagId', async (req, res) => {
             const spaceListsData = await spaceListsResponse.json();
             
             for (const list of spaceListsData.lists || []) {
-                const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+                const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
                     headers: { 'Authorization': token }
                 });
                 const tasksData = await tasksResponse.json();

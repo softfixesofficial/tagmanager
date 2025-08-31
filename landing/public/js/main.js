@@ -115,6 +115,9 @@ class ClickUpTagManager {
         
         // Create color filter options after tags are loaded
         this.createColorFilterOptions();
+        
+        // Initialize tab functionality
+        this.initializeTabFunctionality();
     }
 
     async loadTagsFromClickUp() {
@@ -1390,6 +1393,9 @@ class ClickUpTagManager {
         if (statsContainer) {
             statsContainer.style.display = 'block';
         }
+        
+        // Also show the tab section when statistics are shown
+        this.showTabSection();
     }
 
     // Hide statistics panel
@@ -1397,6 +1403,25 @@ class ClickUpTagManager {
         const statsContainer = document.getElementById('tag-statistics-container');
         if (statsContainer) {
             statsContainer.style.display = 'none';
+        }
+        
+        // Also hide the tab section when statistics are hidden
+        this.hideTabSection();
+    }
+    
+    // Show tab section
+    showTabSection() {
+        const tabContainer = document.getElementById('tab-section-container');
+        if (tabContainer) {
+            tabContainer.style.display = 'block';
+        }
+    }
+    
+    // Hide tab section
+    hideTabSection() {
+        const tabContainer = document.getElementById('tab-section-container');
+        if (tabContainer) {
+            tabContainer.style.display = 'none';
         }
     }
 
@@ -1411,7 +1436,8 @@ class ClickUpTagManager {
         const totalTasks = taggedItems.length;
         const completedTasks = taggedItems.filter(item => 
             item.status.toLowerCase().includes('complete') || 
-            item.status.toLowerCase().includes('done')
+            item.status.toLowerCase().includes('done') ||
+            item.status.toLowerCase().includes('closed')
         ).length;
         const inProgressTasks = taggedItems.filter(item => 
             item.status.toLowerCase().includes('progress') || 
@@ -1462,7 +1488,7 @@ class ClickUpTagManager {
         
         taggedItems.forEach(item => {
             const status = item.status.toLowerCase();
-            if (status.includes('complete') || status.includes('done')) {
+            if (status.includes('complete') || status.includes('done') || status.includes('closed')) {
                 statusCounts['completed']++;
             } else if (status.includes('progress') || status.includes('doing')) {
                 statusCounts['in progress']++;
@@ -1611,7 +1637,7 @@ class ClickUpTagManager {
         
         taggedItems.forEach(item => {
             const status = item.status.toLowerCase();
-            if (status.includes('complete') || status.includes('done')) {
+            if (status.includes('complete') || status.includes('done') || status.includes('closed')) {
                 statusCounts['completed']++;
             } else if (status.includes('progress') || status.includes('doing')) {
                 statusCounts['in progress']++;
@@ -1659,7 +1685,7 @@ class ClickUpTagManager {
 
     // Get CSS class for status
     getStatusClass(status) {
-        if (status.includes('complete') || status.includes('done')) return 'status-completed';
+        if (status.includes('complete') || status.includes('done') || status.includes('closed')) return 'status-completed';
         if (status.includes('progress') || status.includes('doing')) return 'status-in-progress';
         if (status.includes('overdue')) return 'status-overdue';
         return 'status-to-do';
@@ -1691,6 +1717,478 @@ class ClickUpTagManager {
             overdueTasks: 0,
             avgCompletionTime: 0
         });
+    }
+    
+    // Initialize tab functionality
+    initializeTabFunctionality() {
+        // Tab switching
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const targetTab = e.currentTarget.dataset.tab;
+                this.switchTab(targetTab);
+            });
+        });
+        
+        // Tag creation form
+        this.initializeTagCreation();
+        
+        // Load all tasks for the tasks tab
+        this.loadAllTasks();
+    }
+    
+    // Switch between tabs
+    switchTab(tabName) {
+        // Update tab buttons
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.tab === tabName) {
+                btn.classList.add('active');
+            }
+        });
+        
+        // Update tab content
+        const tabContents = document.querySelectorAll('.tab-content');
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+            content.style.display = 'none';
+        });
+        
+        const targetContent = document.getElementById(`${tabName}-tab`);
+        if (targetContent) {
+            targetContent.classList.add('active');
+            targetContent.style.display = 'block';
+        }
+        
+        // Load specific tab data if needed
+        if (tabName === 'all-tasks') {
+            this.loadAllTasks();
+        } else if (tabName === 'tag-management') {
+            this.refreshCreatedTags();
+        }
+    }
+    
+    // Initialize tag creation functionality
+    initializeTagCreation() {
+        // Color picker functionality
+        const colorPickerTrigger = document.getElementById('color-picker-trigger');
+        if (colorPickerTrigger) {
+            colorPickerTrigger.addEventListener('click', () => {
+                this.showNewTagColorPicker();
+            });
+        }
+        
+        // Form submission
+        const tagCreationForm = document.getElementById('tag-creation-form');
+        if (tagCreationForm) {
+            tagCreationForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createNewTag();
+            });
+        }
+    }
+    
+    // Show color picker for new tag creation
+    showNewTagColorPicker() {
+        const colorOptions = [
+            '#3E63DD', '#4f8cff', '#6b7280', '#ef4444', '#f59e0b', '#10b981',
+            '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16', '#f97316', '#6366f1',
+            '#14b8a6', '#f43f5e', '#a855f7', '#eab308', '#22c55e', '#3b82f6',
+            '#fbbf24', '#34d399', '#f87171', '#a78bfa', '#fb7185', '#67e8f9',
+            '#bef264', '#fdba74', '#86efac', '#c4b5fd', '#fda4af', '#a5f3fc'
+        ];
+        
+        const currentColor = document.getElementById('color-preview').style.backgroundColor || '#4f8cff';
+        
+        // Create color picker modal
+        const modal = document.createElement('div');
+        modal.className = 'color-picker-overlay';
+        modal.innerHTML = `
+            <div class="color-picker-modal">
+                <div class="color-picker-header">
+                    <h3 class="color-picker-title">Choose Tag Color</h3>
+                    <button class="color-picker-close">&times;</button>
+                </div>
+                <div class="color-picker-grid">
+                    ${colorOptions.map(color => `
+                        <div class="color-option ${color === currentColor ? 'selected' : ''}" 
+                             style="background-color: ${color}" 
+                             data-color="${color}"></div>
+                    `).join('')}
+                </div>
+                <div class="color-picker-actions">
+                    <button class="color-picker-btn cancel">Cancel</button>
+                    <button class="color-picker-btn apply" disabled>Apply</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        let selectedColor = currentColor;
+        const applyBtn = modal.querySelector('.color-picker-btn.apply');
+        
+        // Color selection
+        modal.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', () => {
+                modal.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+                option.classList.add('selected');
+                selectedColor = option.dataset.color;
+                applyBtn.disabled = false;
+            });
+        });
+        
+        // Modal controls
+        const closeModal = () => {
+            document.body.removeChild(modal);
+        };
+        
+        modal.querySelector('.color-picker-close').addEventListener('click', closeModal);
+        modal.querySelector('.color-picker-btn.cancel').addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+        
+        // Apply color
+        applyBtn.addEventListener('click', () => {
+            this.updateSelectedColor(selectedColor);
+            closeModal();
+        });
+    }
+    
+    // Update selected color in the form
+    updateSelectedColor(color) {
+        const colorPreview = document.getElementById('color-preview');
+        const colorLabel = document.querySelector('.color-label');
+        
+        if (colorPreview) {
+            colorPreview.style.backgroundColor = color;
+        }
+        if (colorLabel) {
+            colorLabel.textContent = color;
+        }
+    }
+    
+    // Create new tag
+    async createNewTag() {
+        const tagNameInput = document.getElementById('new-tag-name');
+        const tagName = tagNameInput.value.trim();
+        const tagColor = document.getElementById('color-preview').style.backgroundColor || '#4f8cff';
+        
+        if (!tagName) {
+            alert('Please enter a tag name');
+            return;
+        }
+        
+        // Convert RGB to hex if needed
+        const hexColor = this.rgbToHex(tagColor);
+        
+        try {
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) {
+                alert('No access token found. Please login again.');
+                return;
+            }
+            
+            // Disable form during creation
+            const createBtn = document.querySelector('.btn-create-tag');
+            const originalText = createBtn.textContent;
+            createBtn.disabled = true;
+            createBtn.textContent = 'Creating...';
+            
+            // Create tag via API
+            const response = await fetch('https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    name: tagName,
+                    color: hexColor 
+                })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                
+                // Clear form
+                tagNameInput.value = '';
+                this.updateSelectedColor('#4f8cff');
+                
+                // Refresh tags list
+                await this.loadTagsFromClickUp();
+                this.render();
+                
+                // Refresh created tags display
+                this.refreshCreatedTags();
+                
+                alert(`Tag "${tagName}" created successfully!`);
+            } else {
+                const error = await response.json();
+                alert(`Failed to create tag: ${error.message || error.error || 'Unknown error'}`);
+            }
+        } catch (error) {
+            console.error('Error creating tag:', error);
+            alert('Failed to create tag. Please try again.');
+        } finally {
+            // Re-enable form
+            const createBtn = document.querySelector('.btn-create-tag');
+            createBtn.disabled = false;
+            createBtn.textContent = 'Create Tag';
+        }
+    }
+    
+    // Refresh created tags display
+    async refreshCreatedTags() {
+        if (!this.tags || this.tags.length === 0) {
+            return;
+        }
+        
+        try {
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) {
+                return;
+            }
+            
+            // Get all tasks to check tag usage
+            const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tasks?token=${token}&listId=all`);
+            
+            let allTasks = [];
+            if (response.ok) {
+                const data = await response.json();
+                allTasks = data.tasks || [];
+            }
+            
+            const usedTags = [];
+            const unusedTags = [];
+            
+            // Check each tag to see if it's used in any task
+            this.tags.forEach(tag => {
+                const isUsed = allTasks.some(task => 
+                    task.tags && task.tags.some(taskTag => taskTag.name === tag.id || taskTag.name === tag.name)
+                );
+                
+                if (isUsed) {
+                    usedTags.push(tag);
+                } else {
+                    unusedTags.push(tag);
+                }
+            });
+            
+            this.renderTagsList('used-tags-list', 'used-tags-count', usedTags, allTasks);
+            this.renderTagsList('unused-tags-list', 'unused-tags-count', unusedTags, allTasks);
+            
+        } catch (error) {
+            console.error('Error refreshing created tags:', error);
+            // Fallback to showing all tags as unused
+            this.renderTagsList('used-tags-list', 'used-tags-count', []);
+            this.renderTagsList('unused-tags-list', 'unused-tags-count', this.tags);
+        }
+    }
+    
+    // Render tags list in created tags section
+    renderTagsList(containerId, countId, tags, allTasks = []) {
+        const container = document.getElementById(containerId);
+        const countElement = document.getElementById(countId);
+        
+        if (!container || !countElement) return;
+        
+        countElement.textContent = tags.length;
+        
+        if (tags.length === 0) {
+            container.innerHTML = `<div class="no-tags-message">No ${containerId.includes('used') ? 'used' : 'unused'} tags yet</div>`;
+            return;
+        }
+        
+        container.innerHTML = tags.map(tag => {
+            // Count actual usage
+            const usageCount = allTasks.filter(task => 
+                task.tags && task.tags.some(taskTag => taskTag.name === tag.id || taskTag.name === tag.name)
+            ).length;
+            
+            return `
+                <div class="created-tag-item">
+                    <div class="created-tag-info">
+                        <div class="created-tag-color" style="background-color: ${tag.tag_bg || tag.color || '#4f8cff'}"></div>
+                        <div class="created-tag-name">${tag.name}</div>
+                        <div class="created-tag-usage">${usageCount} tasks</div>
+                    </div>
+                    <div class="created-tag-actions">
+                        <button class="tag-action-btn edit" onclick="tagManager.editTag('${tag.id}', '${tag.name}')" title="Edit tag">
+                            ✏️
+                        </button>
+                        <button class="tag-action-btn delete" onclick="tagManager.deleteTag('${tag.id}', '${tag.name}')" title="Delete tag">
+                            🗑️
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Load all tasks for the tasks tab
+    async loadAllTasks() {
+        const tasksGrid = document.getElementById('all-tasks-grid');
+        if (!tasksGrid) return;
+        
+        // Show loading
+        tasksGrid.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading all tasks...</div>
+            </div>
+        `;
+        
+        try {
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) {
+                tasksGrid.innerHTML = '<div class="no-data-message">Please login to view tasks</div>';
+                return;
+            }
+            
+            const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tasks?token=${token}&listId=all`);
+            
+            if (!response.ok) {
+                tasksGrid.innerHTML = '<div class="no-data-message">Failed to load tasks</div>';
+                return;
+            }
+            
+            const data = await response.json();
+            const allTasks = data.tasks || [];
+            
+            if (allTasks.length === 0) {
+                tasksGrid.innerHTML = '<div class="no-data-message">No tasks found</div>';
+                return;
+            }
+            
+            this.renderAllTasks(allTasks);
+            
+        } catch (error) {
+            console.error('Error loading all tasks:', error);
+            tasksGrid.innerHTML = '<div class="no-data-message">Error loading tasks</div>';
+        }
+    }
+    
+    // Render all tasks in grid format
+    renderAllTasks(tasks) {
+        const tasksGrid = document.getElementById('all-tasks-grid');
+        if (!tasksGrid) return;
+        
+        const mappedTasks = tasks.map(mapClickUpTaskToUI);
+        
+        tasksGrid.innerHTML = mappedTasks.map(task => `
+            <div class="task-card">
+                <div class="task-card-header">
+                    <div class="task-card-id">${task.displayId || task.id}</div>
+                    <div class="task-card-badges">
+                        <div class="task-badge priority-${task.priority.toLowerCase()}">${task.priority}</div>
+                        <div class="task-badge status-${task.status.toLowerCase().replace(' ', '-')}">${task.status}</div>
+                    </div>
+                </div>
+                <div class="task-card-title">${task.title}</div>
+                <div class="task-card-meta">
+                    ${task.assignee && task.assignee !== 'Unassigned' ? `
+                        <div class="task-meta-item">
+                            <span>👤</span>
+                            <span>${task.assignee}</span>
+                        </div>
+                    ` : ''}
+                    ${task.dueDate && task.dueDate !== 'No due date' ? `
+                        <div class="task-meta-item">
+                            <span>📅</span>
+                            <span>${task.dueDate}</span>
+                        </div>
+                    ` : ''}
+                    <div class="task-meta-item">
+                        <span>👨‍💼</span>
+                        <span>${task.creator || 'Unknown'}</span>
+                    </div>
+                </div>
+                ${task.tags && task.tags.length > 0 ? `
+                    <div class="task-tags">
+                        ${task.tags.map(tag => `<div class="task-tag">${tag.name}</div>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
+        
+        // Add filter functionality
+        this.initializeTaskFilters(mappedTasks);
+    }
+    
+    // Initialize task filters
+    initializeTaskFilters(tasks) {
+        const statusFilter = document.getElementById('task-status-filter');
+        const priorityFilter = document.getElementById('task-priority-filter');
+        
+        const applyFilters = () => {
+            const statusValue = statusFilter?.value || 'all';
+            const priorityValue = priorityFilter?.value || 'all';
+            
+            const filteredTasks = tasks.filter(task => {
+                const statusMatch = statusValue === 'all' || task.status.toLowerCase().includes(statusValue);
+                const priorityMatch = priorityValue === 'all' || task.priority.toLowerCase() === priorityValue;
+                return statusMatch && priorityMatch;
+            });
+            
+            this.renderFilteredTasks(filteredTasks);
+        };
+        
+        if (statusFilter) {
+            statusFilter.addEventListener('change', applyFilters);
+        }
+        if (priorityFilter) {
+            priorityFilter.addEventListener('change', applyFilters);
+        }
+    }
+    
+    // Render filtered tasks
+    renderFilteredTasks(filteredTasks) {
+        const tasksGrid = document.getElementById('all-tasks-grid');
+        if (!tasksGrid) return;
+        
+        if (filteredTasks.length === 0) {
+            tasksGrid.innerHTML = '<div class="no-data-message">No tasks match the selected filters</div>';
+            return;
+        }
+        
+        tasksGrid.innerHTML = filteredTasks.map(task => `
+            <div class="task-card">
+                <div class="task-card-header">
+                    <div class="task-card-id">${task.displayId || task.id}</div>
+                    <div class="task-card-badges">
+                        <div class="task-badge priority-${task.priority.toLowerCase()}">${task.priority}</div>
+                        <div class="task-badge status-${task.status.toLowerCase().replace(' ', '-')}">${task.status}</div>
+                    </div>
+                </div>
+                <div class="task-card-title">${task.title}</div>
+                <div class="task-card-meta">
+                    ${task.assignee && task.assignee !== 'Unassigned' ? `
+                        <div class="task-meta-item">
+                            <span>👤</span>
+                            <span>${task.assignee}</span>
+                        </div>
+                    ` : ''}
+                    ${task.dueDate && task.dueDate !== 'No due date' ? `
+                        <div class="task-meta-item">
+                            <span>📅</span>
+                            <span>${task.dueDate}</span>
+                        </div>
+                    ` : ''}
+                    <div class="task-meta-item">
+                        <span>👨‍💼</span>
+                        <span>${task.creator || 'Unknown'}</span>
+                    </div>
+                </div>
+                ${task.tags && task.tags.length > 0 ? `
+                    <div class="task-tags">
+                        ${task.tags.map(tag => `<div class="task-tag">${tag.name}</div>`).join('')}
+                    </div>
+                ` : ''}
+            </div>
+        `).join('');
     }
 }
 
