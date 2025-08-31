@@ -2197,6 +2197,25 @@ class ClickUpTagManager {
             this.renderFilteredTasks(filteredTasks);
         };
         
+        // Enhanced filter function with loading
+        const applyFiltersWithLoading = () => {
+            // Show loading in tasks grid
+            const tasksGrid = document.getElementById('all-tasks-grid');
+            if (tasksGrid) {
+                tasksGrid.innerHTML = `
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">Filtering tasks...</div>
+                    </div>
+                `;
+            }
+            
+            // Apply filters after a short delay to show loading
+            setTimeout(() => {
+                applyFilters();
+            }, 200);
+        };
+        
         // Clear any existing event listeners and add new ones
         if (statusFilter) {
             // Clone the element to remove all event listeners
@@ -2204,7 +2223,7 @@ class ClickUpTagManager {
             statusFilter.parentNode.replaceChild(newStatusFilter, statusFilter);
             
             // Add event listener to the new element
-            newStatusFilter.addEventListener('change', applyFilters);
+            newStatusFilter.addEventListener('change', applyFiltersWithLoading);
             console.log('[TM] Status filter event listener added');
         } else {
             console.error('[TM] Status filter element not found!');
@@ -2216,7 +2235,7 @@ class ClickUpTagManager {
             priorityFilter.parentNode.replaceChild(newPriorityFilter, priorityFilter);
             
             // Add event listener to the new element
-            newPriorityFilter.addEventListener('change', applyFilters);
+            newPriorityFilter.addEventListener('change', applyFiltersWithLoading);
             console.log('[TM] Priority filter event listener added');
         } else {
             console.error('[TM] Priority filter element not found!');

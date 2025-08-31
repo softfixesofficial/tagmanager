@@ -535,9 +535,11 @@ export default {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            name: name.trim(),
-            tag_fg: color || '#ffffff',
-            tag_bg: color || '#4f8cff'
+            tag: {
+              name: name.trim(),
+              tag_fg: color || '#ffffff',
+              tag_bg: color || '#4f8cff'
+            }
           })
         });
         
