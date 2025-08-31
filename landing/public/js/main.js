@@ -116,8 +116,9 @@ class ClickUpTagManager {
         // Create color filter options after tags are loaded
         this.createColorFilterOptions();
         
-        // Initialize management functionality
+        // Initialize management functionality and show it by default
         this.initializeManagementFunctionality();
+        this.showManagementSection();
     }
 
     async loadTagsFromClickUp() {
@@ -1394,8 +1395,7 @@ class ClickUpTagManager {
             statsContainer.style.display = 'block';
         }
         
-        // Also show the management section when statistics are shown
-        this.showManagementSection();
+        // Management section is already visible, no need to show/hide
     }
 
     // Hide statistics panel
@@ -1405,8 +1405,7 @@ class ClickUpTagManager {
             statsContainer.style.display = 'none';
         }
         
-        // Also hide the management section when statistics are hidden
-        this.hideManagementSection();
+        // Management section stays visible, no need to hide
     }
     
     // Show management section
