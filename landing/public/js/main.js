@@ -1930,7 +1930,8 @@ class ClickUpTagManager {
             
             if (response.ok) {
                 const result = await response.json();
-                console.log('Tag created successfully:', result);
+                console.log('[TM] Tag created successfully:', result);
+                console.log('[TM] New tag data:', result);
                 
                 // Clear form
                 tagNameInput.value = '';
@@ -1940,13 +1941,21 @@ class ClickUpTagManager {
                 this.showManagementSectionLoading();
                 
                 // Refresh tags list from ClickUp and update this.tags
+                console.log('[TM] Loading tags from ClickUp after creation...');
                 await this.loadTagsFromClickUp();
+                console.log('[TM] Tags loaded, count:', this.tags.length);
                 
                 // Render the main interface
+                console.log('[TM] Rendering main interface...');
                 this.render();
                 
                 // Refresh created tags display
+                console.log('[TM] Refreshing created tags display...');
                 await this.refreshCreatedTags();
+                
+                // Re-initialize drag and drop for new tags
+                this.initializeDragAndDrop('used-tags-list');
+                this.initializeDragAndDrop('unused-tags-list');
                 
                 // Hide loading after refresh
                 this.hideManagementSectionLoading();
@@ -1984,7 +1993,11 @@ class ClickUpTagManager {
     
     // Refresh created tags display
     async refreshCreatedTags() {
+        console.log('[TM] refreshCreatedTags called');
+        console.log('[TM] Current tags array:', this.tags);
+        
         if (!this.tags || this.tags.length === 0) {
+            console.log('[TM] No tags available, returning');
             return;
         }
         
@@ -2029,6 +2042,9 @@ class ClickUpTagManager {
                 }
             });
             
+            console.log('[TM] Rendering used tags:', usedTags.length);
+            console.log('[TM] Rendering unused tags:', unusedTags.length);
+            
             this.renderTagsList('used-tags-list', 'used-tags-count', usedTags, allTasks);
             this.renderTagsList('unused-tags-list', 'unused-tags-count', unusedTags, allTasks);
             
@@ -2042,10 +2058,16 @@ class ClickUpTagManager {
     
     // Render tags list in created tags section
     renderTagsList(containerId, countId, tags, allTasks = []) {
+        console.log(`[TM] renderTagsList called for ${containerId}`);
+        console.log(`[TM] Tags to render:`, tags);
+        
         const container = document.getElementById(containerId);
         const countElement = document.getElementById(countId);
         
-        if (!container || !countElement) return;
+        if (!container || !countElement) {
+            console.error(`[TM] Container or count element not found for ${containerId}`);
+            return;
+        }
         
         countElement.textContent = tags.length;
         
