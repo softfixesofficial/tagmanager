@@ -287,6 +287,54 @@ router.get('/tags', async (req, res) => {
         
         let allTags = [];
         
+        // First, get all space tags directly from each space
+        for (const space of spacesData.spaces || []) {
+            try {
+                console.log(`[BE] Getting tags for space: ${space.name} (${space.id})`);
+                
+                const spaceTagsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/tag`, {
+                    headers: { 'Authorization': token }
+                });
+                
+                if (spaceTagsResponse.ok) {
+                    const spaceTagsData = await spaceTagsResponse.json();
+                    console.log(`[BE] Space ${space.name} tags:`, spaceTagsData.tags?.length || 0);
+                    
+                    if (spaceTagsData.tags && spaceTagsData.tags.length > 0) {
+                        for (const tag of spaceTagsData.tags) {
+                            const existingTag = allTags.find(t => t.id === tag.name);
+                            if (!existingTag) {
+                                const tagData = {
+                                    ...tag,
+                                    id: tag.name,
+                                    name: tag.name,
+                                    space_id: space.id,
+                                    creator_id: null,
+                                    creator_name: null,
+                                    created_date: null,
+                                    task_count: 0,
+                                    workspace_id: null,
+                                    chain_id: null,
+                                    userid: null,
+                                    dependencies: [],
+                                    assignees: [],
+                                    priority: 'Normal',
+                                    due_date: null,
+                                    description: ''
+                                };
+                                allTags.push(new ClickUpTag(tagData));
+                            }
+                        }
+                    }
+                } else {
+                    console.error(`[BE] Failed to get tags for space ${space.name}:`, spaceTagsResponse.status);
+                }
+            } catch (error) {
+                console.error(`[BE] Error getting tags for space ${space.name}:`, error);
+            }
+        }
+        
+        // Then, get task tags to count usage
         for (const space of spacesData.spaces || []) {
             const foldersResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/folder`, {
                 headers: { 'Authorization': token }
@@ -310,28 +358,7 @@ router.get('/tags', async (req, res) => {
                             for (const tag of task.tags) {
                                 const tagId = tag.name;
                                 const existingTag = allTags.find(t => t.id === tagId);
-                                if (!existingTag) {
-                                    const tagData = {
-                                        ...tag,
-                                        id: tagId,
-                                        list_id: list.id,
-                                        space_id: space.id,
-                                        folder_id: folder.id,
-                                        creator_id: task.creator?.id || null,
-                                        creator_name: task.creator?.username || null,
-                                        created_date: task.date_created,
-                                        task_count: 1,
-                                        workspace_id: task.workspace_id || null,
-                                        chain_id: task.chain_id || null,
-                                        userid: task.userid || null,
-                                        dependencies: task.dependencies || [],
-                                        assignees: task.assignees || [],
-                                        priority: task.priority || 'Normal',
-                                        due_date: task.due_date || null,
-                                        description: task.description || ''
-                                    };
-                                    allTags.push(new ClickUpTag(tagData));
-                                } else {
+                                if (existingTag) {
                                     existingTag.task_count++;
                                 }
                             }

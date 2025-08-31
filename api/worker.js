@@ -133,17 +133,43 @@ export default {
         let spaceTagsMap = new Map();
         for (const space of spacesData.spaces || []) {
           try {
+            console.log(`[Worker] Getting tags for space: ${space.name} (${space.id})`);
             const spaceTagsResponse = await fetch(`https://api.clickup.com/api/v2/space/${space.id}/tag`, {
               headers: { 'Authorization': token }
             });
             if (spaceTagsResponse.ok) {
               const spaceTagsData = await spaceTagsResponse.json();
+              console.log(`[Worker] Space ${space.name} tags:`, spaceTagsData.tags?.length || 0);
+              
               for (const spaceTag of spaceTagsData.tags || []) {
                 spaceTagsMap.set(spaceTag.name, {
                   ...spaceTag,
                   space_id: space.id
                 });
+                
+                // Add all space tags to allTags array (even unused ones)
+                const tagData = {
+                  ...spaceTag,
+                  id: spaceTag.name,
+                  name: spaceTag.name,
+                  space_id: space.id,
+                  creator_id: null,
+                  creator_name: null,
+                  created_date: null,
+                  task_count: 0,
+                  workspace_id: null,
+                  chain_id: null,
+                  userid: null,
+                  dependencies: [],
+                  assignees: [],
+                  priority: 'Normal',
+                  due_date: null,
+                  description: ''
+                };
+                allTags.push(tagData);
               }
+            } else {
+              console.error(`[Worker] Failed to get tags for space ${space.name}:`, spaceTagsResponse.status);
             }
           } catch (error) {
             console.error(`[Worker] Error fetching space tags for space ${space.id}:`, error);
@@ -151,6 +177,7 @@ export default {
         }
         
         console.log(`[Worker] Found ${spaceTagsMap.size} space tags with latest colors`);
+        console.log(`[Worker] Added ${allTags.length} tags to allTags array`);
         
         // Extract tags from tasks - routes.js'deki tam implementasyon
         for (const space of spacesData.spaces || []) {
