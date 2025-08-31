@@ -312,7 +312,7 @@ router.get('/tags', async (req, res) => {
                                     creator_id: null,
                                     creator_name: null,
                                     created_date: null,
-                                    task_count: 0,
+                                    usage_count: 0,
                                     workspace_id: null,
                                     chain_id: null,
                                     userid: null,
@@ -359,7 +359,7 @@ router.get('/tags', async (req, res) => {
                                 const tagId = tag.name;
                                 const existingTag = allTags.find(t => t.id === tagId);
                                 if (existingTag) {
-                                    existingTag.task_count++;
+                                    existingTag.usage_count++;
                                 }
                             }
                         }
@@ -393,7 +393,7 @@ router.get('/tags', async (req, res) => {
                                     creator_id: task.creator?.id || null,
                                     creator_name: task.creator?.username || null,
                                     created_date: task.date_created,
-                                    task_count: 1,
+                                    usage_count: 1,
                                     workspace_id: task.workspace_id || null,
                                     chain_id: task.chain_id || null,
                                     userid: task.userid || null,
@@ -405,7 +405,7 @@ router.get('/tags', async (req, res) => {
                                 };
                                 allTags.push(new ClickUpTag(tagData));
                             } else {
-                                existingTag.task_count++;
+                                existingTag.usage_count++;
                             }
                         }
                     }

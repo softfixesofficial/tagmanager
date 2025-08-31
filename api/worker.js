@@ -220,7 +220,7 @@ export default {
                         creator_id: task.creator?.id || null,
                         creator_name: task.creator?.username || null,
                         created_date: task.date_created,
-                        task_count: 1,
+                        usage_count: 1,
                         workspace_id: task.workspace_id || null,
                         chain_id: task.chain_id || null,
                         userid: task.userid || null,
@@ -232,7 +232,7 @@ export default {
                       };
                       allTags.push(tagData);
                     } else {
-                      existingTag.task_count++;
+                      existingTag.usage_count++;
                       // Update color info if we have newer data
                       if (spaceTagInfo) {
                         existingTag.tag_fg = spaceTagInfo.tag_fg;
@@ -277,7 +277,7 @@ export default {
                       creator_id: task.creator?.id || null,
                       creator_name: task.creator?.username || null,
                       created_date: task.date_created,
-                      task_count: 1,
+                                              usage_count: 1,
                       workspace_id: task.workspace_id || null,
                       chain_id: task.chain_id || null,
                       userid: task.userid || null,
@@ -289,7 +289,7 @@ export default {
                     };
                     allTags.push(tagData);
                   } else {
-                    existingTag.task_count++;
+                    existingTag.usage_count++;
                     // Update color info if we have newer data
                     if (spaceTagInfo) {
                       existingTag.tag_fg = spaceTagInfo.tag_fg;
