@@ -2476,6 +2476,139 @@ class ClickUpTagManager {
         }
     }
     
+    // Load task path information
+    async loadTaskPaths(tasks) {
+        const token = localStorage.getItem('clickup_access_token');
+        if (!token) return;
+        
+        // Load paths for each task
+        for (const task of tasks) {
+            try {
+                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/task/${task.id}/details`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
+                    if (pathElement) {
+                        pathElement.textContent = data.fullPath;
+                        pathElement.title = data.fullPath; // Show full path on hover
+                    }
+                } else {
+                    console.error(`[TM] Failed to load path for task ${task.id}`);
+                    const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
+                    if (pathElement) {
+                        pathElement.textContent = 'Path not available';
+                    }
+                }
+            } catch (error) {
+                console.error(`[TM] Error loading path for task ${task.id}:`, error);
+                const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
+                if (pathElement) {
+                    pathElement.textContent = 'Path not available';
+                }
+            }
+        }
+    }
+    
+    // Remove all tags from task
+    async removeAllTagsFromTask(taskId) {
+        try {
+            console.log(`[TM] Removing all tags from task "${taskId}"`);
+            
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) {
+                alert('No access token found. Please login again.');
+                return;
+            }
+            
+            // Get task details to see current tags
+            const taskResponse = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/task/${taskId}/details`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!taskResponse.ok) {
+                alert('Failed to get task details. Please try again.');
+                return;
+            }
+            
+            const taskData = await taskResponse.json();
+            const currentTags = taskData.task.tags || [];
+            
+            if (currentTags.length === 0) {
+                alert('This task has no tags to remove.');
+                return;
+            }
+            
+            // Confirm removal
+            const confirmMessage = `Are you sure you want to remove all ${currentTags.length} tag(s) from this task?\n\nTags: ${currentTags.map(tag => tag.name).join(', ')}`;
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Show loading on the task card
+            const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+            if (taskCard) {
+                const originalContent = taskCard.innerHTML;
+                taskCard.innerHTML = `
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <div class="loading-text">Removing all tags...</div>
+                    </div>
+                `;
+                
+                // Remove each tag
+                let removedCount = 0;
+                for (const tag of currentTags) {
+                    try {
+                        const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/task/${taskId}/tag/${encodeURIComponent(tag.name)}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            removedCount++;
+                        } else {
+                            console.error(`[TM] Failed to remove tag "${tag.name}" from task "${taskId}"`);
+                        }
+                    } catch (error) {
+                        console.error(`[TM] Error removing tag "${tag.name}" from task "${taskId}":`, error);
+                    }
+                }
+                
+                // Refresh the task display and tag lists
+                await this.loadAllTasks();
+                await this.refreshCreatedTags();
+                
+                // Show success feedback
+                taskCard.style.backgroundColor = '#fef2f2';
+                setTimeout(() => {
+                    taskCard.style.backgroundColor = '';
+                }, 1000);
+                
+                if (removedCount > 0) {
+                    alert(`Successfully removed ${removedCount} tag(s) from the task.`);
+                } else {
+                    alert('Failed to remove any tags. Please try again.');
+                    // Restore original content
+                    taskCard.innerHTML = originalContent;
+                }
+            }
+            
+        } catch (error) {
+            console.error('[TM] Error removing all tags from task:', error);
+            alert('Failed to remove tags. Please try again.');
+        }
+    }
+    
     // Render filtered tasks
     renderFilteredTasks(filteredTasks) {
         const tasksGrid = document.getElementById('all-tasks-grid');
@@ -2489,7 +2622,12 @@ class ClickUpTagManager {
         tasksGrid.innerHTML = filteredTasks.map(task => `
             <div class="task-card" data-task-id="${task.id}">
                 <div class="task-card-header">
-                    <div class="task-card-id">${task.displayId || task.id}</div>
+                    <div class="task-card-left">
+                        <button class="task-card-remove-btn" onclick="tagManager.removeAllTagsFromTask('${task.id}')" title="Remove all tags from this task">
+                            ✕
+                        </button>
+                        <div class="task-card-path" data-task-id="${task.id}">Loading path...</div>
+                    </div>
                     <div class="task-card-badges">
                         <div class="task-badge priority-${task.priority.toLowerCase()}">${task.priority}</div>
                         <div class="task-badge status-${task.status.toLowerCase().replace(' ', '-')}">${task.status}</div>
@@ -2531,6 +2669,9 @@ class ClickUpTagManager {
         
         // Add drop event listeners to task cards
         this.initializeTaskCardDropZones();
+        
+        // Load task path information for each task
+        this.loadTaskPaths(filteredTasks);
     }
     
     // Update filter options based on actual task data

@@ -806,4 +806,86 @@ router.delete('/task/:taskId/tag/:tagName', async (req, res) => {
     }
 });
 
+// Get task details with path information
+router.get('/task/:taskId/details', async (req, res) => {
+    try {
+        const { taskId } = req.params;
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({ error: 'No authorization token provided' });
+        }
+        
+        console.log(`[API] Getting details for task "${taskId}"`);
+        
+        // Get task details
+        const taskResponse = await fetch(`https://api.clickup.com/api/v2/task/${taskId}`, {
+            headers: {
+                'Authorization': token,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!taskResponse.ok) {
+            const errorData = await taskResponse.text();
+            console.error(`[API] Failed to get task details: ${taskResponse.status} - ${errorData}`);
+            return res.status(taskResponse.status).json({
+                error: 'Failed to get task details',
+                details: errorData,
+                status: taskResponse.status,
+                statusText: taskResponse.statusText
+            });
+        }
+        
+        const taskData = await taskResponse.json();
+        
+        // Get list details to find folder and space
+        const listResponse = await fetch(`https://api.clickup.com/api/v2/list/${taskData.list.id}`, {
+            headers: {
+                'Authorization': token,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        let listData = null;
+        if (listResponse.ok) {
+            listData = await listResponse.json();
+        }
+        
+        // Get space details
+        const spaceResponse = await fetch(`https://api.clickup.com/api/v2/space/${taskData.space.id}`, {
+            headers: {
+                'Authorization': token,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        let spaceData = null;
+        if (spaceResponse.ok) {
+            spaceData = await spaceResponse.json();
+        }
+        
+        // Build path information
+        const pathInfo = {
+            space: spaceData?.name || 'Unknown Space',
+            folder: listData?.folder?.name || null,
+            list: listData?.name || 'Unknown List',
+            task: taskData.name
+        };
+        
+        const result = {
+            task: taskData,
+            path: pathInfo,
+            fullPath: `${pathInfo.space}${pathInfo.folder ? '/' + pathInfo.folder : ''}/${pathInfo.list}`
+        };
+        
+        console.log(`[API] Task details retrieved successfully:`, result);
+        res.json(result);
+        
+    } catch (error) {
+        console.error('[API] Error getting task details:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

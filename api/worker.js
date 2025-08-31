@@ -1061,6 +1061,112 @@ export default {
       }
     }
     
+    // Get task details with path information
+    if (path.match(/^\/api\/clickup\/task\/[^\/]+\/details$/) && request.method === 'GET') {
+      const pathParts = path.split('/');
+      const taskId = pathParts[4];
+      const token = request.headers.get('authorization')?.replace('Bearer ', '');
+      
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'No authorization token provided' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+      
+      console.log(`[Worker] Getting details for task "${taskId}"`);
+      
+      try {
+        // Get task details
+        const taskResponse = await fetch(`https://api.clickup.com/api/v2/task/${taskId}`, {
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (!taskResponse.ok) {
+          const errorData = await taskResponse.text();
+          console.error(`[Worker] Failed to get task details: ${taskResponse.status} - ${errorData}`);
+          return new Response(JSON.stringify({
+            error: 'Failed to get task details',
+            details: errorData,
+            status: taskResponse.status,
+            statusText: taskResponse.statusText
+          }), {
+            status: taskResponse.status,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
+        const taskData = await taskResponse.json();
+        
+        // Get list details to find folder and space
+        const listResponse = await fetch(`https://api.clickup.com/api/v2/list/${taskData.list.id}`, {
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        let listData = null;
+        if (listResponse.ok) {
+          listData = await listResponse.json();
+        }
+        
+        // Get space details
+        const spaceResponse = await fetch(`https://api.clickup.com/api/v2/space/${taskData.space.id}`, {
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        let spaceData = null;
+        if (spaceResponse.ok) {
+          spaceData = await spaceResponse.json();
+        }
+        
+        // Build path information
+        const pathInfo = {
+          space: spaceData?.name || 'Unknown Space',
+          folder: listData?.folder?.name || null,
+          list: listData?.name || 'Unknown List',
+          task: taskData.name
+        };
+        
+        const result = {
+          task: taskData,
+          path: pathInfo,
+          fullPath: `${pathInfo.space}${pathInfo.folder ? '/' + pathInfo.folder : ''}/${pathInfo.list}`
+        };
+        
+        console.log(`[Worker] Task details retrieved successfully:`, result);
+        return new Response(JSON.stringify(result), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+        
+      } catch (error) {
+        console.error('[Worker] Error getting task details:', error);
+        return new Response(JSON.stringify({ error: 'Internal server error' }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+    
     // Add tag to task
     if (path.match(/^\/api\/clickup\/task\/[^\/]+\/tag\/[^\/]+$/) && request.method === 'POST') {
       const pathParts = path.split('/');

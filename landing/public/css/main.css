@@ -2721,8 +2721,44 @@ body {
 .task-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 1rem;
+    position: relative;
+}
+
+.task-card-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.task-card-remove-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+    align-self: flex-start;
+}
+
+.task-card-remove-btn:hover {
+    opacity: 1;
+    background-color: #fef2f2;
+    transform: scale(1.1);
+}
+
+.task-card-path {
+    font-size: 0.7rem;
+    color: #9ca3af;
+    font-family: monospace;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .task-card-id {
