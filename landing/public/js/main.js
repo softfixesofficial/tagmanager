@@ -30,20 +30,51 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 })();
 
-// Login fonksiyonu
+// Login fonksiyonu - Optimized with better error handling and validation
 async function loginWithClickUp() {
     try {
-        console.log('[Auth] Creating OAuth URL directly...');
-        // Frontend'de OAuth URL oluştur (Cloudflare challenge'ı geçmek için)
+        console.log('[Auth] Initiating ClickUp OAuth flow...');
+        
+        // Configuration constants
         const CLICKUP_CLIENT_ID = 'E5Y5P88KKK742V28R31AR7EIWR3J0CWU';
         const CLICKUP_REDIRECT_URI = window.location.origin + '/';
         
-        const oauthUrl = `https://app.clickup.com/api?client_id=${encodeURIComponent(CLICKUP_CLIENT_ID)}&redirect_uri=${encodeURIComponent(CLICKUP_REDIRECT_URI)}`;
+        // Validate configuration
+        if (!CLICKUP_CLIENT_ID || CLICKUP_CLIENT_ID.length < 10) {
+            throw new Error('Invalid ClickUp Client ID configuration');
+        }
         
-        console.log('[Auth] OAuth URL:', oauthUrl);
-        window.location.href = oauthUrl;
-    } catch (e) {
-        console.error('[Auth] Failed to get OAuth URL:', e);
+        // Create OAuth URL with proper encoding
+        const oauthUrl = new URL('https://app.clickup.com/api');
+        oauthUrl.searchParams.set('client_id', CLICKUP_CLIENT_ID);
+        oauthUrl.searchParams.set('redirect_uri', CLICKUP_REDIRECT_URI);
+        
+        console.log('[Auth] OAuth URL created successfully');
+        
+        // Store login attempt timestamp for debugging
+        localStorage.setItem('login_attempt_timestamp', Date.now().toString());
+        
+        // Redirect to ClickUp OAuth
+        window.location.href = oauthUrl.toString();
+        
+    } catch (error) {
+        console.error('[Auth] Login failed:', error);
+        
+        // Show user-friendly error message
+        const loginSection = document.getElementById('login-section');
+        if (loginSection) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'login-error';
+            errorDiv.textContent = 'Login failed. Please try again.';
+            errorDiv.style.cssText = 'color: #ef4444; margin-top: 1rem; text-align: center;';
+            
+            // Remove existing error messages
+            loginSection.querySelectorAll('.login-error').forEach(el => el.remove());
+            loginSection.appendChild(errorDiv);
+            
+            // Auto-remove error after 5 seconds
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
     }
 }
 
@@ -143,74 +174,230 @@ class ClickUpTagManager {
     }
 
     async initialize() {
-        // Token kontrolü
-        const token = localStorage.getItem('clickup_access_token');
-        console.log('[TM] initialize() token present =', !!token, 'length =', token ? token.length : 0);
-        if (!token) {
-            console.warn('[TM] No token found. Showing login section.');
+        console.log('[TM] Initializing Tag Manager...');
+        
+        try {
+            // Step 1: Token validation and authentication
+            const token = localStorage.getItem('clickup_access_token');
+            console.log('[TM] Token check:', { present: !!token, length: token?.length || 0 });
+            
+            if (!token) {
+                console.warn('[TM] No token found. Redirecting to login.');
+                showLoginSection();
+                return;
+            }
+            
+            // Step 2: Validate token with API call
+            const isValidToken = await this.validateToken(token);
+            if (!isValidToken) {
+                console.warn('[TM] Token validation failed. Clearing and redirecting to login.');
+                localStorage.removeItem('clickup_access_token');
+                showLoginSection();
+                return;
+            }
+            
+            console.log('[TM] Token validated successfully. Loading Tag Manager...');
+            showTagManagerSection();
+            
+            // Step 3: Load user profile (non-blocking)
+            this.loadUserProfile().catch(error => {
+                console.warn('[TM] Failed to load user profile:', error);
+            });
+            
+            // Step 4: Load tags and render UI
+            await this.loadTagsFromClickUp();
+            this.render();
+            
+            // Step 5: Setup event listeners and functionality
+            this.attachEventListeners();
+            this.setupSearchAndFilter();
+            
+            // Step 6: Initialize drag and drop with retry mechanism
+            this.initializeDragAndDropWithRetry();
+            
+            // Step 7: Setup filters and management
+            this.createColorFilterOptions();
+            this.initializeManagementFunctionality();
+            this.showManagementSection();
+            
+            console.log('[TM] Initialization completed successfully');
+            
+        } catch (error) {
+            console.error('[TM] Initialization failed:', error);
+            
+            // Show user-friendly error message
+            this.showErrorMessage('Failed to initialize Tag Manager. Please refresh the page.');
+            
+            // Fallback to login
             showLoginSection();
-            return;
         }
-        
-        console.log('[TM] Token found. Showing Tag Manager section and loading tags...');
-        showTagManagerSection();
-        
-            // Load user profile
-    await this.loadUserProfile();
-        
-        await this.loadTagsFromClickUp();
-        this.render();
-        this.attachEventListeners();
-        this.setupSearchAndFilter();
-        
-        // Initialize drag and drop after rendering
-        if (typeof initializeDragAndDrop === 'function') {
-            initializeDragAndDrop();
+    }
+    
+    // Token validation helper
+    async validateToken(token) {
+        try {
+            const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tags?token=${token}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            return response.ok;
+        } catch (error) {
+            console.warn('[TM] Token validation error:', error);
+            return false;
         }
+    }
+    
+    // Drag and drop initialization with retry mechanism
+    initializeDragAndDropWithRetry(maxRetries = 3) {
+        let retryCount = 0;
         
-        // Create color filter options after tags are loaded
-        this.createColorFilterOptions();
+        const attemptInitialization = () => {
+            try {
+                if (typeof initializeDragAndDrop === 'function') {
+                    initializeDragAndDrop();
+                    console.log('[TM] Drag and drop initialized successfully');
+                } else {
+                    throw new Error('initializeDragAndDrop function not found');
+                }
+            } catch (error) {
+                retryCount++;
+                console.warn(`[TM] Drag and drop initialization attempt ${retryCount} failed:`, error);
+                
+                if (retryCount < maxRetries) {
+                    setTimeout(attemptInitialization, 500 * retryCount);
+                } else {
+                    console.error('[TM] Failed to initialize drag and drop after all retries');
+                }
+            }
+        };
         
-        // Initialize management functionality and show it by default
-        this.initializeManagementFunctionality();
-        this.showManagementSection();
+        setTimeout(attemptInitialization, 100);
+    }
+    
+    // Error message display helper
+    showErrorMessage(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+        errorDiv.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ef4444;
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            z-index: 1000;
+            max-width: 300px;
+        `;
+        
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => errorDiv.remove(), 5000);
     }
 
     async loadTagsFromClickUp() {
-        // Loading durumunu göster
+        console.log('[TM] Loading tags from ClickUp...');
+        
+        // Show loading state
         this.showLoading();
         
-        // Kullanıcının access token'ı ile ClickUp API'den etiketleri çek
-        const token = localStorage.getItem('clickup_access_token');
-        if (!token) {
-            console.warn('[TM] loadTagsFromClickUp(): No token, skipping fetch');
-            this.hideLoading();
-            return;
-        }
-        // ClickUp API'den tag'leri çek (teamId otomatik olarak alınacak)
-        const teamId = null; // null olarak bırak, backend otomatik olarak ilk team'i kullanacak
         try {
-            console.log('[TM] Fetching tags from backend...', { hasToken: !!token, teamId });
-            const res = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tags?token=${token}${teamId ? `&teamId=${teamId}` : ''}`);
-            console.log('[TM] /api/clickup/tags response ok =', res.ok, 'status =', res.status);
-            if (!res.ok) {
-                this.hideLoading();
-                return;
+            // Get token and validate
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) {
+                throw new Error('No access token found');
             }
-            const data = await res.json();
-            console.log('[TM] Tags payload:', data);
             
-            // Tüm tag'ları yükle (used ve unused için)
-            this.tags = data.tags || [];
-            console.log('[TM] All tags loaded. count =', this.tags.length);
+            // Fetch tags with timeout and retry mechanism
+            const tags = await this.fetchTagsWithRetry(token);
             
-            // Loading durumunu gizle
-            this.hideLoading();
-        } catch (e) {
-            console.error('[TM] Error while loading tags:', e);
-            this.tags = [];
+            // Process and store tags
+            this.tags = this.processTags(tags);
+            
+            console.log('[TM] Tags loaded successfully:', {
+                total: this.tags.length,
+                used: this.tags.filter(tag => tag.usage_count > 0).length,
+                unused: this.tags.filter(tag => tag.usage_count === 0).length
+            });
+            
+        } catch (error) {
+            console.error('[TM] Failed to load tags:', error);
+            
+            // Show user-friendly error message
+            this.showErrorMessage('Failed to load tags. Please try again.');
+            
+            // Keep existing tags if available, otherwise set empty array
+            this.tags = this.tags || [];
+            
+        } finally {
             this.hideLoading();
         }
+    }
+    
+    // Fetch tags with retry mechanism and timeout
+    async fetchTagsWithRetry(token, maxRetries = 3, timeout = 10000) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`[TM] Fetching tags attempt ${attempt}/${maxRetries}`);
+                
+                // Create abort controller for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), timeout);
+                
+                const response = await fetch(
+                    `https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tags?token=${token}`,
+                    {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' },
+                        signal: controller.signal
+                    }
+                );
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data || !Array.isArray(data.tags)) {
+                    throw new Error('Invalid response format');
+                }
+                
+                return data.tags;
+                
+            } catch (error) {
+                console.warn(`[TM] Fetch attempt ${attempt} failed:`, error);
+                
+                if (attempt === maxRetries) {
+                    throw error;
+                }
+                
+                // Wait before retry (exponential backoff)
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+        }
+    }
+    
+    // Process and validate tags
+    processTags(tags) {
+        if (!Array.isArray(tags)) {
+            console.warn('[TM] Invalid tags data received');
+            return [];
+        }
+        
+        return tags.map(tag => ({
+            id: tag.id || tag.tag_id || '',
+            name: tag.name || tag.tag_name || '',
+            color: tag.color || tag.tag_bg || '#4f8cff',
+            tag_bg: tag.tag_bg || tag.color || '#4f8cff',
+            usage_count: parseInt(tag.usage_count || tag.task_count || 0),
+            created_at: tag.created_at || tag.date_created || null,
+            updated_at: tag.updated_at || tag.date_updated || null
+        })).filter(tag => tag.id && tag.name); // Filter out invalid tags
     }
 
     render() {
@@ -2415,21 +2602,37 @@ class ClickUpTagManager {
         document.removeEventListener('mousemove', this.updateDragFeedback);
     }
     
-    // Initialize task card drop zones
+    // Initialize task card drop zones with enhanced error handling
     initializeTaskCardDropZones() {
-        const taskCards = document.querySelectorAll('.task-card');
-        
-        taskCards.forEach(card => {
-            // Remove existing event listeners
-            card.removeEventListener('dragover', this.handleDragOver);
-            card.removeEventListener('dragleave', this.handleDragLeave);
-            card.removeEventListener('drop', this.handleDrop);
+        try {
+            const taskCards = document.querySelectorAll('.task-card');
+            console.log(`[TM] Initializing drop zones for ${taskCards.length} task cards`);
             
-            // Add new event listeners
-            card.addEventListener('dragover', this.handleDragOver.bind(this));
-            card.addEventListener('dragleave', this.handleDragLeave.bind(this));
-            card.addEventListener('drop', this.handleDrop.bind(this));
-        });
+            taskCards.forEach((card, index) => {
+                try {
+                    // Remove existing event listeners to prevent duplicates
+                    card.removeEventListener('dragover', this.handleDragOver);
+                    card.removeEventListener('dragleave', this.handleDragLeave);
+                    card.removeEventListener('drop', this.handleDrop);
+                    
+                    // Add new event listeners with proper binding
+                    card.addEventListener('dragover', this.handleDragOver.bind(this));
+                    card.addEventListener('dragleave', this.handleDragLeave.bind(this));
+                    card.addEventListener('drop', this.handleDrop.bind(this));
+                    
+                    // Add visual feedback for draggable areas
+                    card.setAttribute('data-droppable', 'true');
+                    
+                } catch (cardError) {
+                    console.warn(`[TM] Failed to initialize drop zone for card ${index}:`, cardError);
+                }
+            });
+            
+            console.log('[TM] Task card drop zones initialized successfully');
+            
+        } catch (error) {
+            console.error('[TM] Failed to initialize task card drop zones:', error);
+        }
     }
     
     // Handle drag over
@@ -2443,79 +2646,178 @@ class ClickUpTagManager {
         e.currentTarget.classList.remove('drag-over');
     }
     
-    // Handle drop
+    // Handle drop with enhanced error handling and validation
     async handleDrop(e) {
         e.preventDefault();
         e.currentTarget.classList.remove('drag-over');
         
-        const taskId = e.currentTarget.dataset.taskId;
-        const data = e.dataTransfer.getData('text/plain');
-        
-        if (!taskId || !data) return;
-        
         try {
-            const { tagName } = JSON.parse(data);
+            // Validate drop data
+            const taskId = e.currentTarget.dataset.taskId;
+            const data = e.dataTransfer.getData('text/plain');
             
-            console.log(`[TM] Adding tag "${tagName}" to task "${taskId}"`);
-            
-            const token = localStorage.getItem('clickup_access_token');
-            if (!token) {
-                alert('No access token found. Please login again.');
+            if (!taskId || !data) {
+                console.warn('[TM] Invalid drop data:', { taskId, hasData: !!data });
                 return;
             }
             
-            // Show loading on the task card
+            // Parse tag data
+            let tagData;
+            try {
+                tagData = JSON.parse(data);
+            } catch (parseError) {
+                console.error('[TM] Failed to parse drop data:', parseError);
+                return;
+            }
+            
+            const { tagName } = tagData;
+            if (!tagName) {
+                console.warn('[TM] No tag name in drop data');
+                return;
+            }
+            
+            console.log(`[TM] Adding tag "${tagName}" to task "${taskId}"`);
+            
+            // Validate token
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) {
+                this.showErrorMessage('Session expired. Please login again.');
+                return;
+            }
+            
+            // Show loading state
             const taskCard = e.currentTarget;
             const originalContent = taskCard.innerHTML;
-            taskCard.innerHTML = `
-                <div class="loading-container">
-                    <div class="loading-spinner"></div>
-                    <div class="loading-text">Adding tag...</div>
-                </div>
-            `;
+            this.showTaskCardLoading(taskCard, 'Adding tag...');
             
-            // Add tag to task via API
-            const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/task/${taskId}/tag/${encodeURIComponent(tagName)}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            // Add tag to task with retry mechanism
+            const success = await this.addTagToTaskWithRetry(taskId, tagName, token);
             
-            if (response.ok) {
-                const result = await response.json();
-                console.log('[TM] Tag added to task successfully:', result);
-                
-                // Refresh the task display and tag lists
-                await this.loadAllTasks();
-                await this.refreshCreatedTags();
-                
-                // Also refresh the main tag list to show newly used tags
-                await this.loadTagsFromClickUp();
-                this.renderTagList();
-                
+            if (success) {
                 // Show success feedback
-                taskCard.style.backgroundColor = '#f0f9ff';
-                setTimeout(() => {
-                    taskCard.style.backgroundColor = '';
-                }, 1000);
+                this.showTaskCardSuccess(taskCard);
+                
+                // Refresh data (non-blocking)
+                this.refreshDataAfterTagOperation();
                 
             } else {
-                const error = await response.json();
-                console.error('[TM] Failed to add tag to task:', error);
-                alert(`Failed to add tag: ${error.error || 'Unknown error'}`);
-                
-                // Restore original content
+                // Restore original content on failure
                 taskCard.innerHTML = originalContent;
             }
             
         } catch (error) {
-            console.error('[TM] Error adding tag to task:', error);
-            alert('Failed to add tag. Please try again.');
+            console.error('[TM] Drop operation failed:', error);
+            this.showErrorMessage('Failed to add tag. Please try again.');
             
             // Restore original content
-            taskCard.innerHTML = originalContent;
+            const taskCard = e.currentTarget;
+            if (taskCard) {
+                taskCard.innerHTML = taskCard.getAttribute('data-original-content') || '';
+            }
+        }
+    }
+    
+    // Add tag to task with retry mechanism
+    async addTagToTaskWithRetry(taskId, tagName, token, maxRetries = 2) {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`[TM] Adding tag attempt ${attempt}/${maxRetries}`);
+                
+                const response = await fetch(
+                    `https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/task/${taskId}/tag/${encodeURIComponent(tagName)}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    }
+                );
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('[TM] Tag added successfully:', result);
+                    return true;
+                } else {
+                    const error = await this.parseApiError(response);
+                    console.error(`[TM] Add tag attempt ${attempt} failed:`, error);
+                    
+                    if (attempt === maxRetries) {
+                        this.showErrorMessage(`Failed to add tag: ${error.message}`);
+                        return false;
+                    }
+                }
+                
+            } catch (error) {
+                console.error(`[TM] Add tag attempt ${attempt} error:`, error);
+                
+                if (attempt === maxRetries) {
+                    this.showErrorMessage('Network error. Please check your connection.');
+                    return false;
+                }
+                
+                // Wait before retry
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
+        }
+        
+        return false;
+    }
+    
+    // Show loading state for task card
+    showTaskCardLoading(taskCard, message = 'Loading...') {
+        taskCard.setAttribute('data-original-content', taskCard.innerHTML);
+        taskCard.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">${message}</div>
+            </div>
+        `;
+    }
+    
+    // Show success feedback for task card
+    showTaskCardSuccess(taskCard) {
+        taskCard.style.backgroundColor = '#f0f9ff';
+        taskCard.style.borderColor = '#3b82f6';
+        
+        setTimeout(() => {
+            taskCard.style.backgroundColor = '';
+            taskCard.style.borderColor = '';
+        }, 2000);
+    }
+    
+    // Parse API error response
+    async parseApiError(response) {
+        try {
+            const error = await response.json();
+            return {
+                message: error.error || error.message || `HTTP ${response.status}`,
+                status: response.status,
+                details: error
+            };
+        } catch {
+            return {
+                message: `HTTP ${response.status}: ${response.statusText}`,
+                status: response.status
+            };
+        }
+    }
+    
+    // Refresh data after tag operations (non-blocking)
+    async refreshDataAfterTagOperation() {
+        try {
+            // Refresh in parallel for better performance
+            await Promise.allSettled([
+                this.loadAllTasks(),
+                this.refreshCreatedTags(),
+                this.loadTagsFromClickUp()
+            ]);
+            
+            // Re-render UI
+            this.renderTagList();
+            
+        } catch (error) {
+            console.warn('[TM] Data refresh failed:', error);
         }
     }
     
@@ -2597,9 +2899,15 @@ class ClickUpTagManager {
                     }, 1000);
                     
                 } else {
-                    const error = await response.json();
-                    console.error('[TM] Failed to remove tag from task:', error);
-                    alert(`Failed to remove tag: ${error.error || 'Unknown error'}`);
+                    let errorMessage = 'Unknown error';
+                    try {
+                        const error = await response.json();
+                        errorMessage = error.error || error.message || 'Unknown error';
+                        console.error('[TM] Failed to remove tag from task:', error);
+                    } catch (parseError) {
+                        console.error('[TM] Failed to remove tag from task. Status:', response.status);
+                    }
+                    alert(`Failed to remove tag: ${errorMessage}`);
                     
                     // Restore original content
                     taskCard.innerHTML = originalContent;
@@ -2822,7 +3130,9 @@ class ClickUpTagManager {
         `).join('');
         
         // Add drop event listeners to task cards
-        this.initializeTaskCardDropZones();
+        setTimeout(() => {
+            this.initializeTaskCardDropZones();
+        }, 100);
         
         // Load task path information for each task (background task, don't wait)
         if (!this.isRemovingTag) {
