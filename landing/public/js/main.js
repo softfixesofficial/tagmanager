@@ -2906,7 +2906,22 @@ function applyLanguageChanges(lang) {
             'priority-distribution': 'Priority Distribution',
             'related-tasks': 'Related Tasks',
             'no-data-available': 'No data available',
-            'select-tag-to-view': 'Select a tag to view statistics'
+            'select-tag-to-view': 'Select a tag to view statistics',
+            'create-new-tag': 'Create New Tag',
+            'used-tags': 'Used Tags',
+            'unused-tags': 'Unused Tags',
+            'all-tasks': 'All Tasks',
+            'all-status': 'All Status',
+            'all-priority': 'All Priority',
+            'loading-all-tasks': 'Loading all tasks...',
+            'no-used-tags': 'No used tags yet',
+            'no-unused-tags': 'No unused tags yet',
+            'tag-name': 'Tag Name',
+            'tag-color': 'Tag Color',
+            'enter-tag-name': 'Enter tag name...',
+            'choose-color': 'Choose Color',
+            'create-tag': 'Create Tag',
+            'tasks': 'tasks'
         },
         tr: {
             'page-title': 'Etiket Yöneticisi',
@@ -2926,7 +2941,22 @@ function applyLanguageChanges(lang) {
             'priority-distribution': 'Öncelik Dağılımı',
             'related-tasks': 'İlgili Görevler',
             'no-data-available': 'Veri bulunamadı',
-            'select-tag-to-view': 'İstatistikleri görmek için bir etiket seçin'
+            'select-tag-to-view': 'İstatistikleri görmek için bir etiket seçin',
+            'create-new-tag': 'Yeni Etiket Oluştur',
+            'used-tags': 'Kullanılan Etiketler',
+            'unused-tags': 'Kullanılmayan Etiketler',
+            'all-tasks': 'Tüm Görevler',
+            'all-status': 'Tüm Durum',
+            'all-priority': 'Tüm Öncelik',
+            'loading-all-tasks': 'Tüm görevler yükleniyor...',
+            'no-used-tags': 'Henüz kullanılan etiket yok',
+            'no-unused-tags': 'Henüz kullanılmayan etiket yok',
+            'tag-name': 'Etiket Adı',
+            'tag-color': 'Etiket Rengi',
+            'enter-tag-name': 'Etiket adı girin...',
+            'choose-color': 'Renk Seç',
+            'create-tag': 'Etiket Oluştur',
+            'tasks': 'görev'
         }
     };
     
@@ -2973,6 +3003,30 @@ function applyLanguageChanges(lang) {
     // Update data panel subtitle
     const dataSubtitle = document.querySelector('.data-subtitle');
     if (dataSubtitle) dataSubtitle.textContent = t['related-tasks'];
+    
+    // Update elements with data-i18n attributes
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (t[key]) {
+            element.textContent = t[key];
+        }
+    });
+    
+    // Update placeholders with data-i18n-placeholder attributes
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-i18n-placeholder');
+        if (t[key]) {
+            element.placeholder = t[key];
+        }
+    });
+    
+    // Update task count text
+    const taskCountElements = document.querySelectorAll('.task-count');
+    taskCountElements.forEach(element => {
+        if (element.textContent.includes('tasks')) {
+            element.textContent = element.textContent.replace('tasks', t['tasks']);
+        }
+    });
 }
 
 // Initialize language on load

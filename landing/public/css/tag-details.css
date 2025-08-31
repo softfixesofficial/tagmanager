@@ -574,37 +574,44 @@
 }
 
 .item-type {
-    background: #3b82f6;
+    background: #1f2937;
+    color: #93c5fd;
 }
 
 .item-priority {
-    background: #ef4444;
+    background: #1f2937;
+    color: #fca5a5;
 }
 
 .item-priority.medium {
-    background: #f59e0b;
+    background: #1f2937;
+    color: #93c5fd;
 }
 
 .item-priority.low {
-    background: #10b981;
+    background: #1f2937;
+    color: #86efac;
 }
 
 .item-status {
-    background: #6b7280;
+    background: #1f2937;
+    color: #9ca3af;
 }
 
 .item-status.in-progress {
-    background: #3b82f6;
+    background: #1f2937;
+    color: #93c5fd;
 }
 
 .item-status.completed {
-    background: #10b981;
+    background: #1f2937;
+    color: #86efac;
 }
 
 .item-title {
     font-size: 1rem;
     font-weight: 500;
-    color: #1e293b;
+    color: var(--text-primary);
     margin-bottom: 0.8rem;
 }
 
@@ -617,7 +624,7 @@
 .item-meta {
     display: flex;
     gap: 1rem;
-    color: #64748b;
+    color: var(--text-secondary);
     font-size: 0.9rem;
 }
 
@@ -628,7 +635,7 @@
     align-items: center;
     justify-content: center;
     height: 200px;
-    color: #94a3b8;
+    color: var(--text-secondary);
     text-align: center;
     gap: 1rem;
 }
@@ -636,8 +643,8 @@
 .no-data-message {
     text-align: center;
     padding: 2rem;
-    color: #94a3b8;
-    background: #f8fafc;
+    color: var(--text-secondary);
+    background: var(--card-bg);
     border-radius: 12px;
 }
 

@@ -203,7 +203,7 @@ body {
 .lang-label {
     font-size: 14px;
     font-weight: 600;
-    color: #666;
+    color: var(--text-secondary);
     letter-spacing: 0.5px;
 }
 
@@ -668,20 +668,22 @@ body {
 .tag-manager-container {
     max-width: 1400px;
     margin: 2rem auto;
-    background: var(--background-color);
+    background: var(--card-bg);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-md);
     overflow: hidden;
+    border: 1px solid var(--border);
 }
 
 /* Header Styles */
 .tag-manager-header {
     padding: 1.5rem;
-    background: linear-gradient(to right, var(--primary), var(--primary-hover));
-    color: white;
+    background: var(--card-bg);
+    color: var(--text-primary);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid var(--border);
 }
 
 .tag-manager-header h2 {
@@ -1396,7 +1398,8 @@ body {
     border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 500;
-    color: white;
+    background: #1f2937;
+    color: var(--text-primary);
 }
 
 .item-title {
@@ -1424,7 +1427,7 @@ body {
     align-items: center;
     gap: 0.4rem;
     padding: 0.3rem 0.6rem;
-    background: var(--background);
+    background: var(--panel-background);
     border-radius: 6px;
     color: var(--text-secondary);
 }
@@ -2519,8 +2522,8 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem 1rem;
-    background: white;
-    border: 1px solid #d1d5db;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
     border-radius: 8px;
     min-width: 120px;
 }
@@ -2535,7 +2538,7 @@ body {
 .color-label {
     font-family: monospace;
     font-size: 0.85rem;
-    color: #6b7280;
+    color: var(--text-secondary);
 }
 
 .color-picker-trigger {

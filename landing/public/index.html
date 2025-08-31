@@ -251,23 +251,23 @@
                 <div class="left-management-panel">
                     <!-- Tag Creation Section -->
                     <div class="tag-creation-section">
-                        <h3 class="section-title">Create New Tag</h3>
+                        <h3 class="section-title" data-i18n="create-new-tag">Create New Tag</h3>
                         <form class="tag-creation-form" id="tag-creation-form">
                             <div class="form-group">
-                                <label for="new-tag-name">Tag Name</label>
-                                <input type="text" id="new-tag-name" class="form-control" placeholder="Enter tag name..." required>
+                                <label for="new-tag-name" data-i18n="tag-name">Tag Name</label>
+                                <input type="text" id="new-tag-name" class="form-control" placeholder="Enter tag name..." data-i18n-placeholder="enter-tag-name" required>
                             </div>
                             <div class="form-group">
-                                <label>Tag Color</label>
+                                <label data-i18n="tag-color">Tag Color</label>
                                 <div class="color-selection-container">
                                     <div class="selected-color-display" id="selected-color-display">
                                         <div class="color-preview" id="color-preview" style="background-color: #4f8cff;"></div>
                                         <span class="color-label">#4f8cff</span>
                                     </div>
-                                    <button type="button" class="color-picker-trigger" id="color-picker-trigger">Choose Color</button>
+                                    <button type="button" class="color-picker-trigger" id="color-picker-trigger" data-i18n="choose-color">Choose Color</button>
                                 </div>
                             </div>
-                            <button type="submit" class="btn-create-tag">Create Tag</button>
+                            <button type="submit" class="btn-create-tag" data-i18n="create-tag">Create Tag</button>
                         </form>
                     </div>
                     
@@ -275,11 +275,11 @@
                     <div class="tags-category">
                         <h4 class="category-title">
                             <span class="category-icon">✅</span>
-                            <span>Used Tags</span>
+                            <span data-i18n="used-tags">Used Tags</span>
                             <span class="category-count" id="used-tags-count">0</span>
                         </h4>
                         <div class="tags-list" id="used-tags-list">
-                            <div class="no-tags-message">No used tags yet</div>
+                            <div class="no-tags-message" data-i18n="no-used-tags">No used tags yet</div>
                         </div>
                     </div>
                     
@@ -287,11 +287,11 @@
                     <div class="tags-category">
                         <h4 class="category-title">
                             <span class="category-icon">⚪</span>
-                            <span>Unused Tags</span>
+                            <span data-i18n="unused-tags">Unused Tags</span>
                             <span class="category-count" id="unused-tags-count">0</span>
                         </h4>
                         <div class="tags-list" id="unused-tags-list">
-                            <div class="no-tags-message">No unused tags yet</div>
+                            <div class="no-tags-message" data-i18n="no-unused-tags">No unused tags yet</div>
                         </div>
                     </div>
                 </div>
@@ -300,16 +300,16 @@
                 <div class="right-management-panel">
                     <div class="all-tasks-section">
                         <div class="tasks-header">
-                            <h3 class="section-title">All Tasks</h3>
+                            <h3 class="section-title" data-i18n="all-tasks">All Tasks</h3>
                             <div class="tasks-filters">
                                 <select class="task-filter-select" id="task-status-filter">
-                                    <option value="all">All Status</option>
+                                    <option value="all" data-i18n="all-status">All Status</option>
                                     <option value="to-do">To Do</option>
                                     <option value="in-progress">In Progress</option>
                                     <option value="completed">Completed</option>
                                 </select>
                                 <select class="task-filter-select" id="task-priority-filter">
-                                    <option value="all">All Priority</option>
+                                    <option value="all" data-i18n="all-priority">All Priority</option>
                                     <option value="urgent">Urgent</option>
                                     <option value="high">High</option>
                                     <option value="medium">Medium</option>
@@ -320,7 +320,7 @@
                         <div class="all-tasks-grid" id="all-tasks-grid">
                             <div class="loading-container">
                                 <div class="loading-spinner"></div>
-                                <div class="loading-text">Loading all tasks...</div>
+                                <div class="loading-text" data-i18n="loading-all-tasks">Loading all tasks...</div>
                             </div>
                         </div>
                     </div>
