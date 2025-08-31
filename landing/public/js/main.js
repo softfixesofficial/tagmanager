@@ -1,3 +1,8 @@
+// Initialize theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTheme();
+});
+
 // ClickUp OAuth2 access token kontrolü ve alma
 (function handleClickUpAuth() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -54,6 +59,56 @@ function showTagManagerSection() {
     document.getElementById('tag-manager-section').style.display = 'block';
 }
 
+// Dark Mode Functions
+function toggleDarkMode() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    
+    if (isDark) {
+        html.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+    } else {
+        html.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+    }
+}
+
+function initializeTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('dark-mode-toggle').checked = true;
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        document.getElementById('dark-mode-toggle').checked = false;
+    }
+}
+
+// Normalize task status to standard format
+function normalizeTaskStatus(status) {
+    if (!status) return 'To Do';
+    
+    // Handle both string and object status
+    const statusText = typeof status === 'string' ? status : (status.status || status);
+    const statusLower = statusText.toLowerCase();
+    
+    // Map various status formats to standard ones
+    if (statusLower.includes('complete') || statusLower.includes('done') || statusLower.includes('closed') || statusLower.includes('finished')) {
+        return 'Completed';
+    } else if (statusLower.includes('progress') || statusLower.includes('doing') || statusLower.includes('in progress')) {
+        return 'In Progress';
+    } else if (statusLower.includes('overdue') || statusLower.includes('late')) {
+        return 'Overdue';
+    } else if (statusLower.includes('todo') || statusLower.includes('to do') || statusLower.includes('open')) {
+        return 'To Do';
+    }
+    
+    // Return original status if no match
+    return statusText;
+}
+
 // ClickUp görevlerini UI'a dönüştür
 function mapClickUpTaskToUI(task) {
     return {
@@ -61,7 +116,7 @@ function mapClickUpTaskToUI(task) {
         title: task.name,
         type: task.tags && task.tags.length > 0 ? task.tags[0].name : 'Task',
         priority: task.priority && task.priority.priority ? task.priority.priority : 'Medium',
-        status: task.status && task.status.status ? task.status.status : (task.status || 'To Do'),
+        status: normalizeTaskStatus(task.status),
         assignee: task.assignees && task.assignees.length > 0 ? (task.assignees[0].username || task.assignees[0].email || 'Unknown') : 'Unassigned',
         dueDate: task.due_date ? new Date(Number(task.due_date)).toISOString().slice(0, 10) : '',
         // Görseldeki gibi task ID formatı (örn: DB-501, DB-502)
@@ -1724,8 +1779,8 @@ class ClickUpTagManager {
                         <span>Overdue: ${statusCounts['overdue']}</span>
                     </div>
                 </div>
-                </div>
-            `;
+            </div>
+        `;
 
         chartContainer.innerHTML = chartHTML;
     }
@@ -2142,6 +2197,14 @@ class ClickUpTagManager {
             const data = await response.json();
             const allTasks = data.tasks || [];
             
+            console.log('[TM] All tasks loaded:', allTasks.length);
+            console.log('[TM] Task statuses:', allTasks.map(task => ({
+                id: task.id,
+                name: task.name,
+                status: task.status,
+                normalizedStatus: normalizeTaskStatus(task.status)
+            })));
+            
             if (allTasks.length === 0) {
                 tasksGrid.innerHTML = '<div class="no-data-message">No tasks found</div>';
                 return;
@@ -2482,8 +2545,32 @@ class ClickUpTagManager {
                     const result = await response.json();
                     console.log('[TM] Tag removed from task successfully:', result);
                     
-                    // Refresh the task display and tag lists
-                    await this.loadAllTasks();
+                    // Check if we're in Related Tasks section
+                    const isRelatedTasks = taskCard.closest('.tagged-item') !== null;
+                    
+                    if (isRelatedTasks) {
+                        // Remove the task card from Related Tasks
+                        taskCard.remove();
+                        
+                        // Update task count
+                        const taskCountElement = document.querySelector('.task-count');
+                        if (taskCountElement) {
+                            const currentCount = parseInt(taskCountElement.textContent);
+                            const newCount = Math.max(0, currentCount - 1);
+                            taskCountElement.textContent = `${newCount} tasks`;
+                        }
+                        
+                        // If no tasks left, show no data message
+                        const taggedItemsPanel = document.querySelector('#tagged-items');
+                        if (taggedItemsPanel && taggedItemsPanel.querySelectorAll('.tagged-item').length === 0) {
+                            taggedItemsPanel.innerHTML = '<div class="no-data-message">No tasks found</div>';
+                        }
+                    } else {
+                        // Refresh the task display and tag lists for All Tasks
+                        await this.loadAllTasks();
+                    }
+                    
+                    // Always refresh created tags
                     await this.refreshCreatedTags();
                     
                     // Show success feedback

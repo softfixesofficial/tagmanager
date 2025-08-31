@@ -1,22 +1,24 @@
 /* Login Container Styles */
 .login-container {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f5f5f5;
+    background-color: var(--background);
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
     margin: 0;
+    transition: var(--transition);
 }
 
 .login-card {
-    background-color: white;
+    background-color: var(--card-bg);
     padding: 40px;
     border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow);
     text-align: center;
     width: 100%;
     max-width: 420px;
+    transition: var(--transition);
 }
 
 .logo {
@@ -92,6 +94,32 @@
     --transition: all 0.2s ease-in-out;
 }
 
+/* Dark Mode Variables */
+[data-theme="dark"] {
+    /* Dark Color Palette */
+    --primary: #60a5fa;
+    --primary-light: #1e3a8a;
+    --background: #0f172a;
+    --card-bg: #1e293b;
+    --border: #334155;
+    --shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.3);
+    --text-main: #f1f5f9;
+    --text-secondary: #94a3b8;
+    
+    /* Neutral Colors */
+    --background-color: #0f172a;
+    --card-background: #1e293b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --border-color: #334155;
+    --panel-background: #1e293b;
+    
+    /* Elevation */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -147,6 +175,21 @@ body {
     display: flex;
     align-items: center;
     gap: 1.5rem;
+}
+
+/* Dark Mode Toggle */
+.dark-mode-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-right: 1rem;
+}
+
+.mode-label {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
 }
 
 /* Language Toggle - Like in second image */
@@ -480,7 +523,7 @@ body {
 .search-input:focus {
     outline: none;
     border-color: var(--primary);
-    background: #fff;
+    background: var(--card-bg);
 }
 
 .active-tags-list {
@@ -491,7 +534,7 @@ body {
 }
 
 .tag-item {
-    background: #f7faff;
+    background: var(--primary-light);
     border-radius: 10px;
     padding: 0.7rem 1.2rem;
     cursor: pointer;
@@ -500,7 +543,7 @@ body {
     transition: var(--transition);
     color: var(--text-main);
     font-weight: 500;
-    box-shadow: 0 2px 8px 0 rgba(80, 112, 255, 0.04);
+    box-shadow: var(--shadow-sm);
 }
 .tag-item:hover {
     background: var(--primary-light);
@@ -2212,9 +2255,9 @@ body {
 /* Donut Chart Styles */
 .donut-chart-container {
     width: 100%;
-    height: 100%;
+    height: 180px;
     display: flex;
-    overflow: hidden;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     position: relative;
@@ -2226,7 +2269,7 @@ body {
     border-radius: 50%;
     background: conic-gradient(
         #4f8cff 0deg 120deg,
-        #e5e7eb 120deg 240deg,
+        #f59e0b 120deg 240deg,
         #10b981 240deg 300deg,
         #ef4444 300deg 360deg
     );
@@ -2234,6 +2277,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin-bottom: 20px;
 }
 
 .donut-chart::before {
@@ -2246,10 +2290,7 @@ body {
 }
 
 .donut-legend {
-    position: absolute;
-    bottom: -40px;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
     display: flex;
     gap: 1rem;
     font-size: 0.75rem;
@@ -2257,6 +2298,7 @@ body {
     justify-content: center;
     width: 100%;
     text-align: center;
+    margin-top: 10px;
 }
 
 .donut-legend-item {
