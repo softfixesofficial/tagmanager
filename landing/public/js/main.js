@@ -2615,41 +2615,45 @@ class ClickUpTagManager {
         }
     }
     
-    // Load task path information
+    // Load task path information (background task)
     async loadTaskPaths(tasks) {
-        const token = localStorage.getItem('clickup_access_token');
-        if (!token) return;
-        
-        // Load paths for each task
-        for (const task of tasks) {
-            try {
-                const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/task/${task.id}/details`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+        try {
+            const token = localStorage.getItem('clickup_access_token');
+            if (!token) return;
+            
+            // Load paths for each task
+            for (const task of tasks) {
+                try {
+                    const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/task/${task.id}/details`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
+                        if (pathElement) {
+                            pathElement.textContent = data.fullPath || 'Path not available';
+                            pathElement.title = data.fullPath || 'Path not available';
+                        }
+                    } else {
+                        // Silently set fallback text
+                        const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
+                        if (pathElement) {
+                            pathElement.textContent = 'Path not available';
+                        }
                     }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
-                    if (pathElement) {
-                        pathElement.textContent = data.fullPath || 'Path not available';
-                        pathElement.title = data.fullPath || 'Path not available'; // Show full path on hover
-                    }
-                } else {
-                    console.warn(`[TM] Failed to load path for task ${task.id} - Status: ${response.status}`);
+                } catch {
+                    // Silently set fallback text for individual task errors
                     const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
                     if (pathElement) {
                         pathElement.textContent = 'Path not available';
                     }
                 }
-            } catch (error) {
-                console.warn(`[TM] Error loading path for task ${task.id}:`, error.message);
-                const pathElement = document.querySelector(`[data-task-id="${task.id}"].task-card-path`);
-                if (pathElement) {
-                    pathElement.textContent = 'Path not available';
-                }
             }
+        } catch {
+            // Silently ignore all path loading errors
         }
     }
     
@@ -2820,9 +2824,14 @@ class ClickUpTagManager {
         // Add drop event listeners to task cards
         this.initializeTaskCardDropZones();
         
-        // Load task path information for each task (only if not in tag removal context)
+        // Load task path information for each task (background task, don't wait)
         if (!this.isRemovingTag) {
-            this.loadTaskPaths(filteredTasks);
+            // Run in background without blocking UI
+            setTimeout(() => {
+                this.loadTaskPaths(filteredTasks).catch(() => {
+                    // Ignore all path loading errors
+                });
+            }, 100);
         }
     }
     
