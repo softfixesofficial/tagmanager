@@ -479,31 +479,33 @@
 }
 
 .stat-item {
-    background: #f8fafc;
+    background: var(--card-bg);
     padding: 1.5rem;
     border-radius: 12px;
     text-align: center;
     margin: 0.5rem 0;
+    border: 1px solid var(--border);
 }
 
 .stat-value {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-primary);
     margin-bottom: 0.3rem;
 }
 
 .stat-label {
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 /* Related Tasks Section */
 .tagged-items {
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 16px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border);
 }
 
 .tagged-items-header {
@@ -516,16 +518,16 @@
 .tagged-items-title {
     font-size: 1.1rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-primary);
     margin: 0;
 }
 
 .task-count {
-    background: #f8fafc;
+    background: var(--panel-background);
     padding: 0.3rem 0.8rem;
     border-radius: 8px;
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .tagged-items-list {
@@ -535,10 +537,11 @@
 }
 
 .tagged-item {
-    background: #f8fafc;
+    background: var(--card-bg);
     border-radius: 12px;
     padding: 1rem;
     transition: transform 0.2s;
+    border: 1px solid var(--border);
 }
 
 .tagged-item:hover {
@@ -555,7 +558,7 @@
 .item-id {
     font-family: monospace;
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--text-secondary);
 }
 
 .item-badges {

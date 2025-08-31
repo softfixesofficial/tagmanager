@@ -1398,7 +1398,7 @@ body {
     border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 500;
-    background: #1f2937;
+    background: #000000;
     color: var(--text-primary);
 }
 
@@ -2119,7 +2119,7 @@ body {
 .chart-header h3 {
     font-size: 1rem;
     font-weight: 600;
-    color: #374151;
+    color: var(--text-primary);
     margin: 0;
 }
 
