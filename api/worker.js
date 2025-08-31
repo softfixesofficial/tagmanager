@@ -427,6 +427,163 @@ export default {
       }
     }
 
+    // Create new tag endpoint
+    if (path === '/api/clickup/tag' && request.method === 'POST') {
+      console.log('[Worker] Tag creation requested');
+      
+      const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+      
+      if (!token) {
+        return new Response(JSON.stringify({ error: 'Access token is required' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+
+      try {
+        const body = await request.json();
+        const { name, color } = body;
+        
+        if (!name || !name.trim()) {
+          return new Response(JSON.stringify({ error: 'Tag name is required' }), {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        console.log(`[Worker] Creating tag: ${name} with color: ${color}`);
+        
+        // First get user's workspaces to find the space
+        const workspacesResponse = await fetch('https://api.clickup.com/api/v2/team', {
+          headers: { 'Authorization': token }
+        });
+        
+        if (!workspacesResponse.ok) {
+          const errorData = await workspacesResponse.json();
+          return new Response(JSON.stringify({ 
+            error: 'Failed to get workspaces',
+            details: errorData
+          }), {
+            status: workspacesResponse.status,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
+        const workspacesData = await workspacesResponse.json();
+        const teams = workspacesData.teams || [];
+        
+        if (teams.length === 0) {
+          return new Response(JSON.stringify({ error: 'No workspaces found' }), {
+            status: 404,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
+        // Get spaces from the first team
+        const teamId = teams[0].id;
+        const spacesResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
+          headers: { 'Authorization': token }
+        });
+        
+        if (!spacesResponse.ok) {
+          const errorData = await spacesResponse.json();
+          return new Response(JSON.stringify({ 
+            error: 'Failed to get spaces',
+            details: errorData
+          }), {
+            status: spacesResponse.status,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
+        const spacesData = await spacesResponse.json();
+        const spaces = spacesData.spaces || [];
+        
+        if (spaces.length === 0) {
+          return new Response(JSON.stringify({ error: 'No spaces found' }), {
+            status: 404,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
+        // Use the first space to create the tag
+        const spaceId = spaces[0].id;
+        
+        // Create tag in the space
+        const createTagResponse = await fetch(`https://api.clickup.com/api/v2/space/${spaceId}/tag`, {
+          method: 'POST',
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: name.trim(),
+            tag_fg: color || '#ffffff',
+            tag_bg: color || '#4f8cff'
+          })
+        });
+        
+        if (!createTagResponse.ok) {
+          const errorData = await createTagResponse.json();
+          return new Response(JSON.stringify({ 
+            error: 'Failed to create tag in ClickUp',
+            details: errorData
+          }), {
+            status: createTagResponse.status,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
+        const newTag = await createTagResponse.json();
+        console.log(`[Worker] Tag created successfully: ${name}`);
+        
+        return new Response(JSON.stringify({
+          success: true,
+          message: `Tag created successfully: ${name}`,
+          tag: newTag
+        }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+        
+      } catch (err) {
+        console.error('[Worker] Error creating tag:', err);
+        return new Response(JSON.stringify({ 
+          error: 'Internal server error',
+          details: err.message
+        }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
     // Update tag color endpoint (must come before general tag update)
     if (path.startsWith('/api/clickup/tag/') && path.includes('/color') && request.method === 'PUT') {
       console.log('[Worker] Tag color update requested');
