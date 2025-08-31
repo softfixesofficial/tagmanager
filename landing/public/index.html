@@ -235,77 +235,60 @@
             </div>
         </div>
         
-        <!-- New Tab Section Below Statistics -->
-        <div class="tab-section-container" id="tab-section-container" style="display: none;">
-            <div class="tab-navigation">
-                <button class="tab-btn active" data-tab="tag-management">
-                    <span class="tab-icon">🏷️</span>
-                    <span class="tab-label">Tag Management</span>
-                </button>
-                <button class="tab-btn" data-tab="all-tasks">
-                    <span class="tab-icon">📋</span>
-                    <span class="tab-label">All Tasks</span>
-                </button>
-            </div>
-            
-            <div class="tab-content-container">
-                <!-- Tag Management Tab -->
-                <div class="tab-content active" id="tag-management-tab">
-                    <div class="tag-management-grid">
-                        <!-- Tag Creation Section -->
-                        <div class="tag-creation-section">
-                            <h3 class="section-title">Create New Tag</h3>
-                            <form class="tag-creation-form" id="tag-creation-form">
-                                <div class="form-group">
-                                    <label for="new-tag-name">Tag Name</label>
-                                    <input type="text" id="new-tag-name" class="form-control" placeholder="Enter tag name..." required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Tag Color</label>
-                                    <div class="color-selection-container">
-                                        <div class="selected-color-display" id="selected-color-display">
-                                            <div class="color-preview" id="color-preview" style="background-color: #4f8cff;"></div>
-                                            <span class="color-label">#4f8cff</span>
-                                        </div>
-                                        <button type="button" class="color-picker-trigger" id="color-picker-trigger">Choose Color</button>
+        <!-- New Management Section Below Statistics -->
+        <div class="management-section-container" id="management-section-container" style="display: none;">
+            <div class="management-grid">
+                <!-- Left Side: Tag Management -->
+                <div class="left-management-panel">
+                    <!-- Tag Creation Section -->
+                    <div class="tag-creation-section">
+                        <h3 class="section-title">Create New Tag</h3>
+                        <form class="tag-creation-form" id="tag-creation-form">
+                            <div class="form-group">
+                                <label for="new-tag-name">Tag Name</label>
+                                <input type="text" id="new-tag-name" class="form-control" placeholder="Enter tag name..." required>
+                            </div>
+                            <div class="form-group">
+                                <label>Tag Color</label>
+                                <div class="color-selection-container">
+                                    <div class="selected-color-display" id="selected-color-display">
+                                        <div class="color-preview" id="color-preview" style="background-color: #4f8cff;"></div>
+                                        <span class="color-label">#4f8cff</span>
                                     </div>
-                                </div>
-                                <button type="submit" class="btn-create-tag">Create Tag</button>
-                            </form>
-                        </div>
-                        
-                        <!-- Created Tags Display -->
-                        <div class="created-tags-section">
-                            <h3 class="section-title">Created Tags</h3>
-                            <div class="tags-category-container">
-                                <div class="tags-category">
-                                    <h4 class="category-title">
-                                        <span class="category-icon">✅</span>
-                                        <span>Used Tags</span>
-                                        <span class="category-count" id="used-tags-count">0</span>
-                                    </h4>
-                                    <div class="tags-list" id="used-tags-list">
-                                        <div class="no-tags-message">No used tags yet</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="tags-category">
-                                    <h4 class="category-title">
-                                        <span class="category-icon">⚪</span>
-                                        <span>Unused Tags</span>
-                                        <span class="category-count" id="unused-tags-count">0</span>
-                                    </h4>
-                                    <div class="tags-list" id="unused-tags-list">
-                                        <div class="no-tags-message">No unused tags yet</div>
-                                    </div>
+                                    <button type="button" class="color-picker-trigger" id="color-picker-trigger">Choose Color</button>
                                 </div>
                             </div>
+                            <button type="submit" class="btn-create-tag">Create Tag</button>
+                        </form>
+                    </div>
+                    
+                    <!-- Used Tags Section -->
+                    <div class="tags-category">
+                        <h4 class="category-title">
+                            <span class="category-icon">✅</span>
+                            <span>Used Tags</span>
+                            <span class="category-count" id="used-tags-count">0</span>
+                        </h4>
+                        <div class="tags-list" id="used-tags-list">
+                            <div class="no-tags-message">No used tags yet</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Unused Tags Section -->
+                    <div class="tags-category">
+                        <h4 class="category-title">
+                            <span class="category-icon">⚪</span>
+                            <span>Unused Tags</span>
+                            <span class="category-count" id="unused-tags-count">0</span>
+                        </h4>
+                        <div class="tags-list" id="unused-tags-list">
+                            <div class="no-tags-message">No unused tags yet</div>
                         </div>
                     </div>
                 </div>
                 
-                <!-- All Tasks Tab -->
-                <div class="tab-content" id="all-tasks-tab" style="display: none;">
+                <!-- Right Side: All Tasks -->
+                <div class="right-management-panel">
                     <div class="all-tasks-section">
                         <div class="tasks-header">
                             <h3 class="section-title">All Tasks</h3>

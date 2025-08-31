@@ -2370,82 +2370,32 @@ body {
     }
 }
 
-/* Tab Section Styles */
-.tab-section-container {
+/* Management Section Styles */
+.management-section-container {
     width: 100%;
     padding: 2rem;
     margin-top: 1rem;
 }
 
-.tab-navigation {
-    display: flex;
-    background: white;
-    border-radius: 12px 12px 0 0;
-    border: 1px solid #e5e7eb;
-    border-bottom: none;
-    overflow: hidden;
-}
-
-.tab-btn {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 1rem 1.5rem;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 500;
-    color: #6b7280;
-    border-right: 1px solid #e5e7eb;
-}
-
-.tab-btn:last-child {
-    border-right: none;
-}
-
-.tab-btn:hover {
-    background: #f9fafb;
-    color: #374151;
-}
-
-.tab-btn.active {
-    background: linear-gradient(135deg, #4f8cff 0%, #6b9eff 100%);
-    color: white;
-    box-shadow: 0 2px 4px rgba(79, 140, 255, 0.2);
-}
-
-.tab-icon {
-    font-size: 1.2rem;
-}
-
-.tab-label {
-    font-size: 0.9rem;
-}
-
-.tab-content-container {
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 0 0 12px 12px;
-    min-height: 500px;
-}
-
-.tab-content {
-    padding: 2rem;
-}
-
-.tab-content:not(.active) {
-    display: none;
-}
-
-/* Tag Management Tab Styles */
-.tag-management-grid {
+.management-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1.5fr;
     gap: 2rem;
     align-items: start;
+}
+
+.left-management-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.right-management-panel {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
 }
 
 .section-title {
@@ -2577,25 +2527,14 @@ body {
     box-shadow: none;
 }
 
-/* Created Tags Display Styles */
-.created-tags-section {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-
-.tags-category-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
+/* Individual Tags Category Styles */
 
 .tags-category {
+    background: white;
     border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .category-title {
@@ -2849,29 +2788,15 @@ body {
     font-weight: 500;
 }
 
-/* Responsive Design for Tabs */
+/* Responsive Design for Management Section */
 @media (max-width: 768px) {
-    .tab-section-container {
+    .management-section-container {
         padding: 1rem;
     }
     
-    .tag-management-grid {
+    .management-grid {
         grid-template-columns: 1fr;
         gap: 1.5rem;
-    }
-    
-    .tab-btn {
-        padding: 0.75rem 1rem;
-        flex-direction: column;
-        gap: 0.25rem;
-    }
-    
-    .tab-icon {
-        font-size: 1rem;
-    }
-    
-    .tab-label {
-        font-size: 0.8rem;
     }
     
     .all-tasks-grid {

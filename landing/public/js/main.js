@@ -116,8 +116,8 @@ class ClickUpTagManager {
         // Create color filter options after tags are loaded
         this.createColorFilterOptions();
         
-        // Initialize tab functionality
-        this.initializeTabFunctionality();
+        // Initialize management functionality
+        this.initializeManagementFunctionality();
     }
 
     async loadTagsFromClickUp() {
@@ -1394,8 +1394,8 @@ class ClickUpTagManager {
             statsContainer.style.display = 'block';
         }
         
-        // Also show the tab section when statistics are shown
-        this.showTabSection();
+        // Also show the management section when statistics are shown
+        this.showManagementSection();
     }
 
     // Hide statistics panel
@@ -1405,23 +1405,23 @@ class ClickUpTagManager {
             statsContainer.style.display = 'none';
         }
         
-        // Also hide the tab section when statistics are hidden
-        this.hideTabSection();
+        // Also hide the management section when statistics are hidden
+        this.hideManagementSection();
     }
     
-    // Show tab section
-    showTabSection() {
-        const tabContainer = document.getElementById('tab-section-container');
-        if (tabContainer) {
-            tabContainer.style.display = 'block';
+    // Show management section
+    showManagementSection() {
+        const managementContainer = document.getElementById('management-section-container');
+        if (managementContainer) {
+            managementContainer.style.display = 'block';
         }
     }
     
-    // Hide tab section
-    hideTabSection() {
-        const tabContainer = document.getElementById('tab-section-container');
-        if (tabContainer) {
-            tabContainer.style.display = 'none';
+    // Hide management section
+    hideManagementSection() {
+        const managementContainer = document.getElementById('management-section-container');
+        if (managementContainer) {
+            managementContainer.style.display = 'none';
         }
     }
 
@@ -1719,54 +1719,16 @@ class ClickUpTagManager {
         });
     }
     
-    // Initialize tab functionality
-    initializeTabFunctionality() {
-        // Tab switching
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        tabButtons.forEach(button => {
-            button.addEventListener('click', (e) => {
-                const targetTab = e.currentTarget.dataset.tab;
-                this.switchTab(targetTab);
-            });
-        });
-        
+    // Initialize management functionality
+    initializeManagementFunctionality() {
         // Tag creation form
         this.initializeTagCreation();
         
-        // Load all tasks for the tasks tab
+        // Load all tasks for the tasks section
         this.loadAllTasks();
-    }
-    
-    // Switch between tabs
-    switchTab(tabName) {
-        // Update tab buttons
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        tabButtons.forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.dataset.tab === tabName) {
-                btn.classList.add('active');
-            }
-        });
         
-        // Update tab content
-        const tabContents = document.querySelectorAll('.tab-content');
-        tabContents.forEach(content => {
-            content.classList.remove('active');
-            content.style.display = 'none';
-        });
-        
-        const targetContent = document.getElementById(`${tabName}-tab`);
-        if (targetContent) {
-            targetContent.classList.add('active');
-            targetContent.style.display = 'block';
-        }
-        
-        // Load specific tab data if needed
-        if (tabName === 'all-tasks') {
-            this.loadAllTasks();
-        } else if (tabName === 'tag-management') {
-            this.refreshCreatedTags();
-        }
+        // Load and display created tags
+        this.refreshCreatedTags();
     }
     
     // Initialize tag creation functionality
