@@ -1325,8 +1325,9 @@ body {
 .item-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 0.6rem;
+    position: relative;
 }
 
 .item-id {
@@ -2728,8 +2729,8 @@ body {
 
 .task-card-left {
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .task-card-remove-btn {
@@ -2742,7 +2743,7 @@ body {
     border-radius: 4px;
     transition: all 0.2s ease;
     opacity: 0.7;
-    align-self: flex-start;
+    flex-shrink: 0;
 }
 
 .task-card-remove-btn:hover {
@@ -2759,6 +2760,7 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
 }
 
 .task-card-id {

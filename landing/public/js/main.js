@@ -307,9 +307,14 @@ class ClickUpTagManager {
                 <span class="task-count">${taggedItems.length} tasks</span>
             </div>
             ${taggedItems.length > 0 ? taggedItems.map(item => `
-                <div class="tagged-item">
+                <div class="tagged-item" data-task-id="${item.id}">
                     <div class="item-header">
-                        <span class="item-id">${item.displayId || item.id}</span>
+                        <div class="task-card-left">
+                            <button class="task-card-remove-btn" onclick="tagManager.removeAllTagsFromTask('${item.id}')" title="Remove all tags from this task">
+                                ✕
+                            </button>
+                            <div class="task-card-path" data-task-id="${item.id}">Loading path...</div>
+                        </div>
                         <div class="item-badges">
                             <span class="item-type">${item.type}</span>
                             <span class="item-priority ${item.priority.toLowerCase()}">${item.priority}</span>
@@ -344,6 +349,11 @@ class ClickUpTagManager {
                 </div>
             `).join('') : `<div class="no-data-message">No tasks found</div>`}
         `;
+        
+        // Load task path information for related tasks
+        if (taggedItems.length > 0) {
+            this.loadTaskPaths(taggedItems);
+        }
         
         // Calculate and render statistics
         await this.calculateAndRenderStatistics(taggedItems);
