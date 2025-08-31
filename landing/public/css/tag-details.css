@@ -574,37 +574,37 @@
 }
 
 .item-type {
-    background: #1f2937;
+    background: #000000;
     color: #93c5fd;
 }
 
 .item-priority {
-    background: #1f2937;
+    background: #000000;
     color: #fca5a5;
 }
 
 .item-priority.medium {
-    background: #1f2937;
+    background: #000000;
     color: #93c5fd;
 }
 
 .item-priority.low {
-    background: #1f2937;
+    background: #000000;
     color: #86efac;
 }
 
 .item-status {
-    background: #1f2937;
+    background: #000000;
     color: #9ca3af;
 }
 
 .item-status.in-progress {
-    background: #1f2937;
+    background: #000000;
     color: #93c5fd;
 }
 
 .item-status.completed {
-    background: #1f2937;
+    background: #000000;
     color: #86efac;
 }
 

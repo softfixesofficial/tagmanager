@@ -200,9 +200,10 @@ class ClickUpTagManager {
             const data = await res.json();
             console.log('[TM] Tags payload:', data);
             
-            // Tüm tag'ları yükle (hem kullanılan hem kullanılmayan)
-            this.tags = data.tags || [];
-            console.log('[TM] All tags loaded. count =', this.tags.length);
+            // Sadece kullanılan tag'ları filtrele
+            const usedTags = data.tags.filter(tag => tag.usage_count > 0);
+            this.tags = usedTags || [];
+            console.log('[TM] Used tags loaded. count =', this.tags.length);
             
             // Loading durumunu gizle
             this.hideLoading();
