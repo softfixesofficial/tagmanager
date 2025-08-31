@@ -1280,7 +1280,7 @@ class ClickUpTagManager {
             console.log('[TM] Loading user profile with token:', token.substring(0, 20) + '...');
             
             // Use our API endpoint
-            const response = await fetch(`http://localhost:4000/api/clickup/user?token=${token}`);
+            const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/user?token=${token}`);
             
             if (!response.ok) {
                 const errorText = await response.text();
@@ -1715,32 +1715,17 @@ function logout() {
     showLoginSection();
 }
 
-// Language Switch Function
-function switchLanguage(lang) {
-    console.log('[Lang] Switching to:', lang);
+// Toggle Language Function for new switch
+function toggleLanguage() {
+    const toggle = document.getElementById('lang-toggle');
+    const lang = toggle.checked ? 'ar' : 'en';
     
-    const langSwitch = document.getElementById('language-switch');
-    const langButtons = document.querySelectorAll('.lang-btn');
-    
-    // Update button states
-    langButtons.forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.lang === lang) {
-            btn.classList.add('active');
-        }
-    });
-    
-    // Update switch animation (TR is first, EN is second)
-    if (lang === 'en') {
-        langSwitch.classList.add('en-active');
-    } else {
-        langSwitch.classList.remove('en-active');
-    }
+    console.log('[Lang] Toggling to:', lang);
     
     // Store language preference
     localStorage.setItem('preferred_language', lang);
     
-    // Apply language changes with enhanced translations
+    // Apply language changes
     applyLanguageChanges(lang);
 }
 
@@ -1767,25 +1752,25 @@ function applyLanguageChanges(lang) {
             'no-data-available': 'No data available',
             'select-tag-to-view': 'Select a tag to view statistics'
         },
-        tr: {
-            'page-title': 'Etiket Yöneticisi',
-            'panel-title-tags': 'Etiketler',
-            'panel-title-details': 'Etiket Detayları',
-            'panel-title-data': 'Veriler',
-            'panel-title-statistics': 'Etiket İstatistikleri',
-            'search-placeholder': 'Etiket ara...',
-            'no-selection': 'Bir etiket seçin',
-            'loading': 'Yükleniyor...',
-            'logout': 'Çıkış Yap',
-            'total-tasks': 'Toplam Görev',
-            'completed': 'Tamamlanan',
-            'in-progress': 'Devam Eden',
-            'unassigned': 'Atanmamış',
-            'task-status-distribution': 'Görev Durumu Dağılımı',
-            'priority-distribution': 'Öncelik Dağılımı',
-            'related-tasks': 'İlgili Görevler',
-            'no-data-available': 'Veri bulunamadı',
-            'select-tag-to-view': 'İstatistikleri görmek için bir etiket seçin'
+        ar: {
+            'page-title': 'مدير العلامات',
+            'panel-title-tags': 'العلامات',
+            'panel-title-details': 'تفاصيل العلامة',
+            'panel-title-data': 'البيانات',
+            'panel-title-statistics': 'إحصائيات العلامة',
+            'search-placeholder': 'البحث عن العلامات...',
+            'no-selection': 'اختر علامة',
+            'loading': 'جاري التحميل...',
+            'logout': 'تسجيل الخروج',
+            'total-tasks': 'إجمالي المهام',
+            'completed': 'مكتمل',
+            'in-progress': 'قيد التنفيذ',
+            'unassigned': 'غير مخصص',
+            'task-status-distribution': 'توزيع حالة المهام',
+            'priority-distribution': 'توزيع الأولوية',
+            'related-tasks': 'المهام ذات الصلة',
+            'no-data-available': 'لا توجد بيانات متاحة',
+            'select-tag-to-view': 'اختر علامة لعرض الإحصائيات'
         }
     };
     
@@ -1836,16 +1821,22 @@ function applyLanguageChanges(lang) {
 
 // Initialize language on load
 document.addEventListener('DOMContentLoaded', () => {
-    const savedLang = localStorage.getItem('preferred_language') || 'tr';
-    setTimeout(() => {
-        switchLanguage(savedLang);
-    }, 100);
+    const savedLang = localStorage.getItem('preferred_language') || 'en';
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) {
+        toggle.checked = (savedLang === 'ar');
+        applyLanguageChanges(savedLang);
+    }
 });
 
 // Also initialize when the tag manager loads
 window.addEventListener('load', () => {
-    const savedLang = localStorage.getItem('preferred_language') || 'tr';
-    switchLanguage(savedLang);
+    const savedLang = localStorage.getItem('preferred_language') || 'en';
+    const toggle = document.getElementById('lang-toggle');
+    if (toggle) {
+        toggle.checked = (savedLang === 'ar');
+        applyLanguageChanges(savedLang);
+    }
 });
 
 // Global function to manually refresh user profile

@@ -26,18 +26,16 @@
                 <h1 class="page-title">Tag Manager</h1>
             </div>
             <div class="header-actions">
-                <div class="language-switch-container">
-                    <div class="language-switch" id="language-switch">
-                        <button class="lang-btn active" data-lang="tr" onclick="switchLanguage('tr')">
-                            <span class="lang-text">TR</span>
-                        </button>
-                        <button class="lang-btn" data-lang="en" onclick="switchLanguage('en')">
-                            <span class="lang-text">EN</span>
-                            <div class="flag-overlay">
-                                <div class="flag-uk"></div>
-                            </div>
-                        </button>
-                    </div>
+                <!-- New toggle switch like in second image -->
+                <div class="language-toggle">
+                    <span class="lang-label">EN</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="lang-toggle" onchange="toggleLanguage()">
+                        <span class="toggle-slider">
+                            <div class="uk-flag"></div>
+                        </span>
+                    </label>
+                    <span class="lang-label">AR</span>
                 </div>
                 <div class="user-profile-container">
                     <div class="user-profile-trigger" id="user-profile-trigger">
@@ -58,12 +56,7 @@
                                     <div class="profile-email" id="profile-email">user@example.com</div>
                                 </div>
                             </div>
-                            <div class="profile-workspace">
-                                <div class="workspace-info">
-                                    <div class="workspace-name" id="workspace-name">Workspace Name</div>
-                                    <div class="workspace-plan" id="workspace-plan">Free Plan</div>
-                                </div>
-                            </div>
+
                             <div class="profile-actions">
                                 <button class="profile-action-btn" onclick="logout()">
                                     <span class="action-icon">🚪</span>
