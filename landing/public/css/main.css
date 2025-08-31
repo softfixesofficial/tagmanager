@@ -534,7 +534,7 @@ body {
 }
 
 .tag-item {
-    background: var(--primary-light);
+    background: var(--card-bg);
     border-radius: 10px;
     padding: 0.7rem 1.2rem;
     cursor: pointer;
@@ -546,7 +546,7 @@ body {
     box-shadow: var(--shadow-sm);
 }
 .tag-item:hover {
-    background: var(--primary-light);
+    background: var(--panel-background);
     border-color: var(--primary);
 }
 
@@ -1169,7 +1169,7 @@ body {
 
 .tag-item {
     padding: 0.75rem 1rem;
-    background: white;
+    background: var(--card-bg);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: var(--transition);
@@ -1189,7 +1189,7 @@ body {
 
 .tag-item.inactive {
     opacity: 0.6;
-    background: #f3f4f6;
+    background: var(--panel-background);
 }
 
 .tag-item.dragging {
