@@ -22,58 +22,46 @@ router.get('/user', async (req, res) => {
     if (!token) return res.status(400).json({ error: 'No token provided' });
     
     try {
-        // Get user data
+        console.log('[BE] Fetching user data with token:', token.substring(0, 20) + '...');
+        
+        // Get user data from ClickUp API
         const userResponse = await fetch('https://api.clickup.com/api/v2/user', {
             headers: { 'Authorization': token }
         });
         
         if (!userResponse.ok) {
-            throw new Error(`User API failed: ${userResponse.status}`);
+            const errorText = await userResponse.text();
+            console.error('[BE] ClickUp API error:', userResponse.status, errorText);
+            throw new Error(`ClickUp API failed: ${userResponse.status} - ${errorText}`);
         }
         
         const userData = await userResponse.json();
-        console.log('[BE] User data received:', userData);
+        console.log('[BE] Raw ClickUp user data:', JSON.stringify(userData, null, 2));
         
-        // Get team/workspace data
-        let teamData = null;
-        try {
-            const teamResponse = await fetch('https://api.clickup.com/api/v2/team', {
-                headers: { 'Authorization': token }
-            });
-            
-            if (teamResponse.ok) {
-                const teamsData = await teamResponse.json();
-                if (teamsData.teams && teamsData.teams.length > 0) {
-                    teamData = teamsData.teams[0];
-                }
-            }
-        } catch (teamErr) {
-            console.warn('[BE] Team data fetch failed:', teamErr.message);
+        // Extract user information from the response
+        const user = userData.member?.user || userData.user;
+        
+        if (!user) {
+            throw new Error('No user data found in response');
         }
         
-        // Return comprehensive user data
+        // Return clean user data
         const responseData = {
             user: {
-                id: userData.user?.id,
-                username: userData.user?.username || userData.user?.name || 'ClickUp User',
-                email: userData.user?.email || 'user@clickup.com',
-                profilePicture: userData.user?.profilePicture,
-                color: userData.user?.color,
-                role: 'Member'
-            },
-            team: teamData ? {
-                id: teamData.id,
-                name: teamData.name || 'My Workspace',
-                color: teamData.color,
-                avatar: teamData.avatar,
-                plan: 'Free' // Plan info might not be available
-            } : {
-                name: 'My Workspace',
-                plan: 'Free'
+                id: user.id,
+                username: user.username || 'ClickUp User',
+                email: user.email || 'user@clickup.com',
+                profilePicture: user.profilePicture,
+                color: user.color,
+                initials: user.initials,
+                role: user.role || 3,
+                lastActive: user.last_active,
+                dateJoined: user.date_joined,
+                dateInvited: user.date_invited
             }
         };
         
-        console.log('[BE] Returning user data:', responseData);
+        console.log('[BE] Returning clean user data:', JSON.stringify(responseData, null, 2));
         res.json(responseData);
         
     } catch (err) {

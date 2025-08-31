@@ -102,18 +102,6 @@ class ClickUpTagManager {
         
             // Load user profile
     await this.loadUserProfile();
-    
-    // Force refresh user profile after a delay to ensure proper loading
-    setTimeout(async () => {
-        console.log('[TM] Force refreshing user profile after delay...');
-        await this.loadUserProfile();
-    }, 1000);
-    
-    // Additional debug: Test user profile loading
-    setTimeout(async () => {
-        console.log('[TM] Debug: Testing user profile loading...');
-        await this.loadUserProfile();
-    }, 3000);
         
         await this.loadTagsFromClickUp();
         this.render();
@@ -1277,174 +1265,37 @@ class ClickUpTagManager {
         }
     }
 
-    // Load user profile data using correct ClickUp API endpoints
+    // Load user profile data using our API endpoint
     async loadUserProfile() {
         try {
             const token = localStorage.getItem('clickup_access_token');
             if (!token) {
                 console.log('[TM] No token available for user profile');
                 this.updateUserProfile({
-                    user: { username: 'Demo User', email: 'demo@example.com' },
-                    team: { name: 'Demo Workspace', plan: 'Free' }
+                    user: { username: 'Demo User', email: 'demo@example.com' }
                 });
                 return;
             }
 
-            console.log('[TM] Loading user profile with token:', token.substring(0, 10) + '...');
+            console.log('[TM] Loading user profile with token:', token.substring(0, 20) + '...');
             
-            let userData = null;
+            // Use our API endpoint
+            const response = await fetch(`http://localhost:4000/api/clickup/user?token=${token}`);
             
-            // Try the correct ClickUp API endpoints
-            try {
-                console.log('[TM] Trying ClickUp authorized user endpoint...');
-                
-                // First try: Get authorized user (this should work with any plan)
-                const authUserResponse = await fetch('https://api.clickup.com/api/v2/user', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': token,
-                        'Content-Type': 'application/json',
-                    }
-                });
-                
-                console.log('[TM] ClickUp authorized user response status:', authUserResponse.status);
-                
-                if (authUserResponse.ok) {
-                    const authUserData = await authUserResponse.json();
-                    console.log('[TM] ClickUp authorized user data:', authUserData);
-                    
-                    if (authUserData.user) {
-                        userData = {
-                            user: {
-                                username: authUserData.user.username || authUserData.user.name || 'ClickUp User',
-                                email: authUserData.user.email || 'user@clickup.com',
-                                profilePicture: authUserData.user.profilePicture,
-                                id: authUserData.user.id,
-                                color: authUserData.user.color,
-                                role: 'Member'
-                            },
-                            team: {
-                                name: 'My Workspace',
-                                plan: 'Free'
-                            }
-                        };
-                    }
-                } else {
-                    const errorText = await authUserResponse.text();
-                    console.error('[TM] ClickUp authorized user error:', errorText);
-                }
-            } catch (e) {
-                console.error('[TM] ClickUp authorized user endpoint failed:', e);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('[TM] User API error:', response.status, errorText);
+                throw new Error(`User API failed: ${response.status}`);
             }
             
-            // Second try: Get authorized workspaces to get team info
-            if (!userData || !userData.team.name || userData.team.name === 'My Workspace') {
-                try {
-                    console.log('[TM] Trying ClickUp authorized workspaces endpoint...');
-                    
-                    const workspacesResponse = await fetch('https://api.clickup.com/api/v2/team', {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': token,
-                            'Content-Type': 'application/json',
-                        }
-                    });
-                    
-                    console.log('[TM] ClickUp workspaces response status:', workspacesResponse.status);
-                    
-                    if (workspacesResponse.ok) {
-                        const workspacesData = await workspacesResponse.json();
-                        console.log('[TM] ClickUp workspaces data:', workspacesData);
-                        
-                        if (workspacesData.teams && workspacesData.teams.length > 0) {
-                            const team = workspacesData.teams[0];
-                            
-                            // If we already have user data, just update team info
-                            if (userData) {
-                                userData.team = {
-                                    name: team.name || 'My Workspace',
-                                    id: team.id,
-                                    color: team.color,
-                                    avatar: team.avatar,
-                                    plan: 'Free' // Plan info might not be available in this endpoint
-                                };
-                            } else {
-                                // Create complete user data from workspace info
-                                userData = {
-                                    user: {
-                                        username: 'ClickUp User',
-                                        email: 'user@clickup.com',
-                                        role: 'Member'
-                                    },
-                                    team: {
-                                        name: team.name || 'My Workspace',
-                                        id: team.id,
-                                        color: team.color,
-                                        avatar: team.avatar,
-                                        plan: 'Free'
-                                    }
-                                };
-                            }
-                        }
-                    } else {
-                        const errorText = await workspacesResponse.text();
-                        console.error('[TM] ClickUp workspaces error:', errorText);
-                    }
-                } catch (e) {
-                    console.error('[TM] ClickUp workspaces endpoint failed:', e);
-                }
-            }
+            const data = await response.json();
+            console.log('[TM] User data received:', data);
             
-            // Third try: Use our proxy endpoints as fallback
-            if (!userData) {
-                try {
-                    console.log('[TM] Trying proxy endpoints as fallback...');
-                    
-                    const proxyResponse = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/user?token=${token}`);
-                    
-                    if (proxyResponse.ok) {
-                        const proxyData = await proxyResponse.json();
-                        console.log('[TM] Proxy user data:', proxyData);
-                        
-                        if (proxyData.user) {
-                            userData = {
-                                user: {
-                                    username: proxyData.user.username || proxyData.user.name || 'ClickUp User',
-                                    email: proxyData.user.email || 'user@clickup.com',
-                                    profilePicture: proxyData.user.profilePicture,
-                                    role: 'Member'
-                                },
-                                team: {
-                                    name: proxyData.team?.name || 'My Workspace',
-                                    plan: proxyData.team?.plan || 'Free'
-                                }
-                            };
-                        }
-                    }
-                } catch (e) {
-                    console.error('[TM] Proxy endpoints failed:', e);
-                }
+            if (data.user) {
+                this.updateUserProfile(data);
+            } else {
+                throw new Error('No user data in response');
             }
-            
-            // Final fallback with realistic demo data
-            if (!userData) {
-                console.log('[TM] Using realistic demo data as final fallback');
-                userData = {
-                    user: { 
-                        username: 'ClickUp User', 
-                        email: 'user@clickup.com',
-                        role: 'Admin',
-                        profilePicture: null
-                    },
-                    team: { 
-                        name: 'My Workspace', 
-                        plan: 'Business' 
-                    }
-                };
-            }
-            
-            console.log('[TM] Final user data to update:', userData);
-            this.updateUserProfile(userData);
             
         } catch (error) {
             console.error('[TM] Error loading user profile:', error);
@@ -1452,36 +1303,25 @@ class ClickUpTagManager {
             this.updateUserProfile({
                 user: { 
                     username: 'ClickUp User', 
-                    email: 'user@clickup.com',
-                    role: 'Member'
-                },
-                team: { 
-                    name: 'My Workspace', 
-                    plan: 'Unlimited' 
+                    email: 'user@clickup.com'
                 }
             });
         }
     }
 
-    // Update user profile UI with enhanced data
+    // Update user profile UI with user data
     updateUserProfile(userData) {
         console.log('[TM] Updating user profile with data:', userData);
         
-        const userName = userData.user?.username || userData.user?.name || 'User';
+        const userName = userData.user?.username || 'User';
         const userEmail = userData.user?.email || 'user@example.com';
-        const workspaceName = userData.team?.name || 'My Workspace';
-        const workspacePlan = userData.team?.plan || 'Free';
         const profilePicture = userData.user?.profilePicture || null;
-        const userInitials = this.generateInitials(userName);
+        const userInitials = userData.user?.initials || this.generateInitials(userName);
 
-        // Update user name display with animation
+        // Update user name display
         const userNameElement = document.getElementById('user-name');
         if (userNameElement) {
-            userNameElement.style.opacity = '0';
-            setTimeout(() => {
             userNameElement.textContent = userName;
-                userNameElement.style.opacity = '1';
-            }, 150);
         }
 
         // Update avatar with profile picture or initials
@@ -1512,34 +1352,14 @@ class ClickUpTagManager {
             if (profileAvatarText) profileAvatarText.textContent = userInitials;
         }
 
-        // Update profile card with enhanced information
+        // Update profile card
         const profileName = document.getElementById('profile-name');
         const profileEmail = document.getElementById('profile-email');
-        const workspaceNameElement = document.getElementById('workspace-name');
-        const workspacePlanElement = document.getElementById('workspace-plan');
 
         if (profileName) profileName.textContent = userName;
         if (profileEmail) profileEmail.textContent = userEmail;
-        if (workspaceNameElement) workspaceNameElement.textContent = workspaceName;
-        if (workspacePlanElement) {
-            workspacePlanElement.textContent = `${workspacePlan} Plan`;
-            // Add plan badge styling
-            workspacePlanElement.className = `workspace-plan plan-${workspacePlan.toLowerCase()}`;
-        }
 
-        // Add user role and additional info if available
-        if (userData.user?.role) {
-            const roleElement = document.createElement('div');
-            roleElement.className = 'user-role';
-            roleElement.textContent = userData.user.role;
-            
-            const profileInfo = document.querySelector('.profile-info');
-            if (profileInfo && !document.querySelector('.user-role')) {
-                profileInfo.appendChild(roleElement);
-            }
-        }
-
-        // Store user data globally for other components
+        // Store user data globally
         window.currentUser = userData;
     }
 
@@ -2028,31 +1848,8 @@ window.addEventListener('load', () => {
     switchLanguage(savedLang);
 });
 
-// Global function to manually refresh user profile (for debugging)
+// Global function to manually refresh user profile
 window.refreshUserProfile = function() {
-    console.log('[Debug] Manual user profile refresh triggered');
-    if (window.tagManager) {
-        window.tagManager.loadUserProfile();
-    }
-};
-
-// Test function for language switch
-window.testLanguageSwitch = function() {
-    console.log('[Debug] Testing language switch...');
-    const currentLang = localStorage.getItem('preferred_language') || 'tr';
-    const newLang = currentLang === 'tr' ? 'en' : 'tr';
-    console.log('[Debug] Switching from', currentLang, 'to', newLang);
-    switchLanguage(newLang);
-};
-
-// Test function for user profile
-window.testUserProfile = function() {
-    console.log('[Debug] Testing user profile loading...');
-    const token = localStorage.getItem('clickup_access_token');
-    console.log('[Debug] Token present:', !!token);
-    if (token) {
-        console.log('[Debug] Token preview:', token.substring(0, 20) + '...');
-    }
     if (window.tagManager) {
         window.tagManager.loadUserProfile();
     }
