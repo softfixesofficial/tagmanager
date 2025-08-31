@@ -1291,13 +1291,22 @@ class ClickUpTagManager {
             const data = await response.json();
             console.log('[TM] User data received:', data);
             
+            // Check if data has user property or if data itself is the user
+            let userData;
             if (data.user) {
-                console.log('[TM] User profile found:', data.user);
-                this.updateUserProfile(data);
+                // API returned {user: {...}}
+                userData = data;
+                console.log('[TM] User profile found in data.user:', data.user);
+            } else if (data.id && data.username) {
+                // API returned user data directly
+                userData = { user: data };
+                console.log('[TM] User profile found directly:', data);
             } else {
                 console.error('[TM] No user data in response. Full response:', data);
                 throw new Error('No user data in response: ' + JSON.stringify(data));
             }
+            
+            this.updateUserProfile(userData);
             
         } catch (error) {
             console.error('[TM] Error loading user profile:', error);
