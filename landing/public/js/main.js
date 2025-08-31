@@ -100,14 +100,20 @@ class ClickUpTagManager {
         console.log('[TM] Token found. Showing Tag Manager section and loading tags...');
         showTagManagerSection();
         
-        // Load user profile
+            // Load user profile
+    await this.loadUserProfile();
+    
+    // Force refresh user profile after a delay to ensure proper loading
+    setTimeout(async () => {
+        console.log('[TM] Force refreshing user profile after delay...');
         await this.loadUserProfile();
-        
-        // Force refresh user profile after a delay to ensure proper loading
-        setTimeout(async () => {
-            console.log('[TM] Force refreshing user profile after delay...');
-            await this.loadUserProfile();
-        }, 1000);
+    }, 1000);
+    
+    // Additional debug: Test user profile loading
+    setTimeout(async () => {
+        console.log('[TM] Debug: Testing user profile loading...');
+        await this.loadUserProfile();
+    }, 3000);
         
         await this.loadTagsFromClickUp();
         this.render();
@@ -1473,7 +1479,7 @@ class ClickUpTagManager {
         if (userNameElement) {
             userNameElement.style.opacity = '0';
             setTimeout(() => {
-                userNameElement.textContent = userName;
+            userNameElement.textContent = userName;
                 userNameElement.style.opacity = '1';
             }, 150);
         }
@@ -1643,15 +1649,15 @@ class ClickUpTagManager {
             <div class="bar-chart">
                 ${Object.entries(statusCounts).map(([status, count]) => {
                     const height = (count / maxCount) * 100;
-                    return `
+            return `
                         <div class="bar-item">
                             <div class="bar" style="height: ${height}px;"></div>
                             <div class="bar-label">${status}</div>
-                        </div>
+                    </div>
                     `;
                 }).join('')}
-            </div>
-        `;
+                </div>
+            `;
 
         chartContainer.innerHTML = chartHTML;
     }
@@ -1704,8 +1710,8 @@ class ClickUpTagManager {
                         <span>Low: ${priorityCounts.low}</span>
                     </div>
                 </div>
-            </div>
-        `;
+                </div>
+            `;
 
         chartContainer.innerHTML = chartHTML;
     }
@@ -1814,8 +1820,8 @@ class ClickUpTagManager {
                         <span>Overdue: ${statusCounts['overdue']}</span>
                     </div>
                 </div>
-            </div>
-        `;
+                </div>
+            `;
 
         chartContainer.innerHTML = chartHTML;
     }
@@ -1914,7 +1920,7 @@ function switchLanguage(lang) {
     // Store language preference
     localStorage.setItem('preferred_language', lang);
     
-    // Apply language changes (can be extended with actual translations)
+    // Apply language changes with enhanced translations
     applyLanguageChanges(lang);
 }
 
@@ -1929,7 +1935,17 @@ function applyLanguageChanges(lang) {
             'panel-title-statistics': 'Tag Statistics',
             'search-placeholder': 'Search tags...',
             'no-selection': 'Select a tag',
-            'loading': 'Loading...'
+            'loading': 'Loading...',
+            'logout': 'Logout',
+            'total-tasks': 'Total Tasks',
+            'completed': 'Completed',
+            'in-progress': 'In Progress',
+            'unassigned': 'Unassigned',
+            'task-status-distribution': 'Task Status Distribution',
+            'priority-distribution': 'Priority Distribution',
+            'related-tasks': 'Related Tasks',
+            'no-data-available': 'No data available',
+            'select-tag-to-view': 'Select a tag to view statistics'
         },
         tr: {
             'page-title': 'Etiket Yöneticisi',
@@ -1939,7 +1955,17 @@ function applyLanguageChanges(lang) {
             'panel-title-statistics': 'Etiket İstatistikleri',
             'search-placeholder': 'Etiket ara...',
             'no-selection': 'Bir etiket seçin',
-            'loading': 'Yükleniyor...'
+            'loading': 'Yükleniyor...',
+            'logout': 'Çıkış Yap',
+            'total-tasks': 'Toplam Görev',
+            'completed': 'Tamamlanan',
+            'in-progress': 'Devam Eden',
+            'unassigned': 'Atanmamış',
+            'task-status-distribution': 'Görev Durumu Dağılımı',
+            'priority-distribution': 'Öncelik Dağılımı',
+            'related-tasks': 'İlgili Görevler',
+            'no-data-available': 'Veri bulunamadı',
+            'select-tag-to-view': 'İstatistikleri görmek için bir etiket seçin'
         }
     };
     
@@ -1960,11 +1986,37 @@ function applyLanguageChanges(lang) {
             title.textContent = t[keys[index]];
         }
     });
+    
+    // Update logout button
+    const logoutBtn = document.querySelector('.profile-action-btn span:last-child');
+    if (logoutBtn) logoutBtn.textContent = t['logout'];
+    
+    // Update statistics labels
+    const totalTasksLabel = document.querySelector('.summary-stat-label');
+    if (totalTasksLabel) totalTasksLabel.textContent = t['total-tasks'];
+    
+    const completedLabel = document.querySelector('.summary-stat-item:nth-child(2) .summary-stat-label');
+    if (completedLabel) completedLabel.textContent = t['completed'];
+    
+    const inProgressLabel = document.querySelector('.summary-stat-item:nth-child(3) .summary-stat-label');
+    if (inProgressLabel) inProgressLabel.textContent = t['in-progress'];
+    
+    const unassignedLabel = document.querySelector('.summary-stat-item:nth-child(4) .summary-stat-label');
+    if (unassignedLabel) unassignedLabel.textContent = t['unassigned'];
+    
+    // Update chart titles
+    const chartTitles = document.querySelectorAll('.chart-header h3');
+    if (chartTitles[0]) chartTitles[0].textContent = t['task-status-distribution'];
+    if (chartTitles[1]) chartTitles[1].textContent = t['priority-distribution'];
+    
+    // Update data panel subtitle
+    const dataSubtitle = document.querySelector('.data-subtitle');
+    if (dataSubtitle) dataSubtitle.textContent = t['related-tasks'];
 }
 
 // Initialize language on load
 document.addEventListener('DOMContentLoaded', () => {
-    const savedLang = localStorage.getItem('preferred_language') || 'en';
+    const savedLang = localStorage.getItem('preferred_language') || 'tr';
     setTimeout(() => {
         switchLanguage(savedLang);
     }, 100);
@@ -1972,7 +2024,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Also initialize when the tag manager loads
 window.addEventListener('load', () => {
-    const savedLang = localStorage.getItem('preferred_language') || 'en';
+    const savedLang = localStorage.getItem('preferred_language') || 'tr';
     switchLanguage(savedLang);
 });
 
@@ -1984,6 +2036,28 @@ window.refreshUserProfile = function() {
     }
 };
 
+// Test function for language switch
+window.testLanguageSwitch = function() {
+    console.log('[Debug] Testing language switch...');
+    const currentLang = localStorage.getItem('preferred_language') || 'tr';
+    const newLang = currentLang === 'tr' ? 'en' : 'tr';
+    console.log('[Debug] Switching from', currentLang, 'to', newLang);
+    switchLanguage(newLang);
+};
+
+// Test function for user profile
+window.testUserProfile = function() {
+    console.log('[Debug] Testing user profile loading...');
+    const token = localStorage.getItem('clickup_access_token');
+    console.log('[Debug] Token present:', !!token);
+    if (token) {
+        console.log('[Debug] Token preview:', token.substring(0, 20) + '...');
+    }
+    if (window.tagManager) {
+        window.tagManager.loadUserProfile();
+    }
+};
+
 // Uygulamayı başlat
-const tagManager = new ClickUpTagManager('tag-manager-section');
+const tagManager = new ClickUpTagManager('tag-manager-section'); 
 window.tagManager = tagManager; // Make globally accessible for debugging 

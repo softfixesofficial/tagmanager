@@ -22,12 +22,60 @@ router.get('/user', async (req, res) => {
     if (!token) return res.status(400).json({ error: 'No token provided' });
     
     try {
-        const response = await fetch('https://api.clickup.com/api/v2/user', {
+        // Get user data
+        const userResponse = await fetch('https://api.clickup.com/api/v2/user', {
             headers: { 'Authorization': token }
         });
-        const data = await response.json();
-        const user = new ClickUpUser(data.user);
-        res.json(user);
+        
+        if (!userResponse.ok) {
+            throw new Error(`User API failed: ${userResponse.status}`);
+        }
+        
+        const userData = await userResponse.json();
+        console.log('[BE] User data received:', userData);
+        
+        // Get team/workspace data
+        let teamData = null;
+        try {
+            const teamResponse = await fetch('https://api.clickup.com/api/v2/team', {
+                headers: { 'Authorization': token }
+            });
+            
+            if (teamResponse.ok) {
+                const teamsData = await teamResponse.json();
+                if (teamsData.teams && teamsData.teams.length > 0) {
+                    teamData = teamsData.teams[0];
+                }
+            }
+        } catch (teamErr) {
+            console.warn('[BE] Team data fetch failed:', teamErr.message);
+        }
+        
+        // Return comprehensive user data
+        const responseData = {
+            user: {
+                id: userData.user?.id,
+                username: userData.user?.username || userData.user?.name || 'ClickUp User',
+                email: userData.user?.email || 'user@clickup.com',
+                profilePicture: userData.user?.profilePicture,
+                color: userData.user?.color,
+                role: 'Member'
+            },
+            team: teamData ? {
+                id: teamData.id,
+                name: teamData.name || 'My Workspace',
+                color: teamData.color,
+                avatar: teamData.avatar,
+                plan: 'Free' // Plan info might not be available
+            } : {
+                name: 'My Workspace',
+                plan: 'Free'
+            }
+        };
+        
+        console.log('[BE] Returning user data:', responseData);
+        res.json(responseData);
+        
     } catch (err) {
         console.error('[BE] /api/clickup/user error:', err);
         res.status(500).json({ error: err.message });

@@ -26,9 +26,18 @@
                 <h1 class="page-title">Tag Manager</h1>
             </div>
             <div class="header-actions">
-                <div class="language-switch" id="language-switch">
-                    <button class="lang-btn" data-lang="tr" onclick="switchLanguage('tr')">TR</button>
-                    <button class="lang-btn active" data-lang="en" onclick="switchLanguage('en')">EN</button>
+                <div class="language-switch-container">
+                    <div class="language-switch" id="language-switch">
+                        <button class="lang-btn active" data-lang="tr" onclick="switchLanguage('tr')">
+                            <span class="lang-text">TR</span>
+                        </button>
+                        <button class="lang-btn" data-lang="en" onclick="switchLanguage('en')">
+                            <span class="lang-text">EN</span>
+                            <div class="flag-overlay">
+                                <div class="flag-uk"></div>
+                            </div>
+                        </button>
+                    </div>
                 </div>
                 <div class="user-profile-container">
                     <div class="user-profile-trigger" id="user-profile-trigger">
