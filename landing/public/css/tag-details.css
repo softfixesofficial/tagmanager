@@ -1,9 +1,9 @@
 /* Tag Details Panel */
 .tag-details {
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 16px;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-sm);
 }
 
 .tag-details-header {
@@ -40,10 +40,10 @@
 }
 
 .color-picker-modal {
-    background: white;
+    background: var(--card-bg);
     border-radius: 16px;
     padding: 2rem;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-lg);
     max-width: 400px;
     width: 90%;
 }
@@ -58,7 +58,7 @@
 .color-picker-title {
     font-size: 1.2rem;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-primary);
     margin: 0;
 }
 
@@ -67,14 +67,14 @@
     border: none;
     font-size: 1.5rem;
     cursor: pointer;
-    color: #64748b;
+    color: var(--text-secondary);
     padding: 0.5rem;
     border-radius: 8px;
     transition: background-color 0.2s;
 }
 
 .color-picker-close:hover {
-    background: #f1f5f9;
+    background: var(--primary-light);
 }
 
 .color-picker-grid {

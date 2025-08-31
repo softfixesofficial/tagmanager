@@ -97,27 +97,27 @@
 /* Dark Mode Variables */
 [data-theme="dark"] {
     /* Dark Color Palette */
-    --primary: #60a5fa;
-    --primary-light: #1e3a8a;
-    --background: #0f172a;
-    --card-bg: #1e293b;
-    --border: #334155;
-    --shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.3);
-    --text-main: #f1f5f9;
-    --text-secondary: #94a3b8;
+    --primary: #3b82f6;
+    --primary-light: #1e40af;
+    --background: #0a0a0a;
+    --card-bg: #111111;
+    --border: #2a2a2a;
+    --shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.5);
+    --text-main: #ffffff;
+    --text-secondary: #a0a0a0;
     
     /* Neutral Colors */
-    --background-color: #0f172a;
-    --card-background: #1e293b;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --border-color: #334155;
-    --panel-background: #1e293b;
+    --background-color: #0a0a0a;
+    --card-background: #111111;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --border-color: #2a2a2a;
+    --panel-background: #111111;
     
     /* Elevation */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.6);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
 }
 
 * {
@@ -227,7 +227,7 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #e5e7eb;
+    background-color: var(--border-color);
     border-radius: 30px;
     transition: all 0.3s ease;
     overflow: hidden;
@@ -240,14 +240,14 @@ body {
     width: 24px;
     left: 3px;
     bottom: 3px;
-    background-color: white;
+    background-color: var(--card-bg);
     border-radius: 50%;
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .toggle-switch input:checked + .toggle-slider {
-    background-color: #3b82f6;
+    background-color: var(--primary);
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
@@ -266,13 +266,13 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--card-bg);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 .user-profile-trigger:hover {
@@ -957,8 +957,8 @@ body {
 /* Filter Panel */
 .filter-panel {
     position: static;
-    background: white;
-    border: 1px solid #e1e5e9;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 12px;
     margin-top: 8px;
@@ -975,17 +975,18 @@ body {
     display: block;
     font-size: 12px;
     font-weight: 500;
-    color: #374151;
+    color: var(--text-primary);
     margin-bottom: 4px;
 }
 
 .filter-section select {
     width: 100%;
     padding: 6px 8px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 12px;
-    background: white;
+    background: var(--card-bg);
+    color: var(--text-primary);
 }
 
 .color-filter-container {
@@ -998,15 +999,16 @@ body {
     align-items: center;
     gap: 8px;
     padding: 6px 8px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
-    background: white;
+    background: var(--card-bg);
     cursor: pointer;
     font-size: 12px;
+    color: var(--text-primary);
 }
 
 .color-filter-display:hover {
-    border-color: #9ca3af;
+    border-color: var(--primary);
 }
 
 .color-dot {
@@ -1028,10 +1030,10 @@ body {
     top: 100%;
     left: 0;
     right: 0;
-    background: white;
-    border: 1px solid #d1d5db;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     z-index: 1000;
     margin-top: 2px;
 }
@@ -1043,14 +1045,16 @@ body {
     padding: 6px 8px;
     cursor: pointer;
     font-size: 12px;
+    color: var(--text-primary);
 }
 
 .color-option:hover {
-    background-color: #f3f4f6;
+    background-color: var(--primary-light);
 }
 
 .color-option.selected {
-    background-color: #e5e7eb;
+    background-color: var(--primary);
+    color: white;
 }
 
 .color-filter-select option {
@@ -2745,24 +2749,24 @@ body {
 }
 
 .task-card {
-    background: white;
+    background: var(--card-bg);
     border-radius: 12px;
     padding: 1.5rem;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-color);
     transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm);
     position: relative;
 }
 
 .task-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    border-color: #4f8cff;
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary);
 }
 
 .task-card.drag-over {
-    border: 2px dashed #4f8cff;
-    background-color: #f8f9ff;
+    border: 2px dashed var(--primary);
+    background-color: var(--primary-light);
 }
 
 .task-card-header {
@@ -2794,13 +2798,13 @@ body {
 
 .task-card-remove-btn:hover {
     opacity: 1;
-    background-color: #fef2f2;
+    background-color: var(--primary-light);
     transform: scale(1.1);
 }
 
 .task-card-path {
     font-size: 0.7rem;
-    color: #9ca3af;
+    color: var(--text-secondary);
     font-family: monospace;
     max-width: 200px;
     overflow: hidden;
@@ -2812,8 +2816,8 @@ body {
 .task-card-id {
     font-family: monospace;
     font-size: 0.8rem;
-    color: #6b7280;
-    background: #f3f4f6;
+    color: var(--text-secondary);
+    background: var(--panel-background);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
 }
@@ -2834,7 +2838,7 @@ body {
 .task-badge.priority-urgent { background: #fef2f2; color: #dc2626; }
 .task-badge.priority-high { background: #fef3c7; color: #d97706; }
 .task-badge.priority-medium { background: #ecfdf5; color: #059669; }
-.task-badge.priority-low { background: #f3f4f6; color: #6b7280; }
+.task-badge.priority-low { background: var(--panel-background); color: var(--text-secondary); }
 
 .task-badge.status-completed { background: #ecfdf5; color: #059669; }
 .task-badge.status-in-progress { background: #dbeafe; color: #2563eb; }

@@ -307,17 +307,17 @@ class ClickUpTagManager {
                     console.log('[TM] All tasks loaded:', allTasks.length);
                     
                     // Sadece seçilen tag'e sahip task'ları filtrele
-                    console.log('[TM] Selected tag ID:', this.selectedTag.id);
+                    console.log('[TM] Selected tag name:', this.selectedTag.name);
                     console.log('[TM] All tasks count:', allTasks.length);
                     
                     const filteredTasks = allTasks.filter(task => {
-                        const hasTag = task.tags && task.tags.some(tag => tag.name === this.selectedTag.id);
+                        const hasTag = task.tags && task.tags.some(tag => tag.name === this.selectedTag.name);
                         if (hasTag) {
-                            console.log('[TM] Task', task.id, 'has selected tag:', this.selectedTag.id);
+                            console.log('[TM] Task', task.id, 'has selected tag:', this.selectedTag.name);
                         }
                         return hasTag;
                     });
-                    console.log('[TM] Filtered tasks for tag', this.selectedTag.id, ':', filteredTasks.length);
+                    console.log('[TM] Filtered tasks for tag', this.selectedTag.name, ':', filteredTasks.length);
                     
                     taggedItems = filteredTasks.map(mapClickUpTaskToUI);
                     console.log('[TM] Tagged items mapped. count =', taggedItems.length);
