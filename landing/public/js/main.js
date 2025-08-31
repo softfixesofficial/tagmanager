@@ -2491,6 +2491,10 @@ class ClickUpTagManager {
                 await this.loadAllTasks();
                 await this.refreshCreatedTags();
                 
+                // Also refresh the main tag list to show newly used tags
+                await this.loadTagsFromClickUp();
+                this.renderTagList();
+                
                 // Show success feedback
                 taskCard.style.backgroundColor = '#f0f9ff';
                 setTimeout(() => {
@@ -2577,6 +2581,10 @@ class ClickUpTagManager {
                     
                     // Always refresh created tags
                     await this.refreshCreatedTags();
+                    
+                    // Also refresh the main tag list to show updated usage
+                    await this.loadTagsFromClickUp();
+                    this.renderTagList();
                     
                     // Show success feedback
                     taskCard.style.backgroundColor = '#fef2f2';
@@ -2711,6 +2719,10 @@ class ClickUpTagManager {
                 // Refresh the task display and tag lists
                 await this.loadAllTasks();
                 await this.refreshCreatedTags();
+                
+                // Also refresh the main tag list to show updated usage
+                await this.loadTagsFromClickUp();
+                this.renderTagList();
                 
                 // Show success feedback
                 taskCard.style.backgroundColor = '#fef2f2';

@@ -139,6 +139,7 @@ body {
     min-height: 100vh;
     max-width: 100vw;
     overflow-x: hidden;
+    background: var(--background);
 }
 
 /* Page Header Styles */
@@ -149,6 +150,8 @@ body {
     padding: 2rem 2.5rem 1rem 2.5rem;
     background: var(--background);
     border-bottom: 1px solid var(--border);
+    width: 100%;
+    position: relative;
 }
 
 .page-title {
@@ -156,6 +159,10 @@ body {
     font-weight: 700;
     color: var(--primary);
     margin: 0;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
 }
 
 .page-title.centered {
@@ -171,6 +178,7 @@ body {
     background: var(--background);
     border-radius: 0 0 var(--radius) var(--radius);
     gap: 1.5rem;
+    border-bottom: 1px solid var(--border);
 }
 
 .tag-manager-header {
@@ -183,6 +191,7 @@ body {
     font-weight: 700;
     color: var(--primary);
     border-radius: 0 0 var(--radius) var(--radius);
+    border-bottom: 1px solid var(--border);
 }
 
 .header-actions {
