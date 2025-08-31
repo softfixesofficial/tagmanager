@@ -200,10 +200,9 @@ class ClickUpTagManager {
             const data = await res.json();
             console.log('[TM] Tags payload:', data);
             
-            // Sadece kullanılan tag'ları filtrele
-            const usedTags = data.tags.filter(tag => tag.usage_count > 0);
-            this.tags = usedTags || [];
-            console.log('[TM] Used tags loaded. count =', this.tags.length);
+            // Tüm tag'ları yükle (used ve unused için)
+            this.tags = data.tags || [];
+            console.log('[TM] All tags loaded. count =', this.tags.length);
             
             // Loading durumunu gizle
             this.hideLoading();
@@ -220,15 +219,18 @@ class ClickUpTagManager {
     }
 
     renderTagList() {
-        // Sadece ClickUp'tan gelen tag'leri listele
+        // Sadece kullanılan tag'ları listele (main tag list için)
         const allTagsList = this.container.querySelector('#all-tags-list');
         if (!allTagsList) {
             console.warn('[TM] renderTagList(): #all-tags-list not found in container');
             return;
         }
         allTagsList.innerHTML = '';
-        console.log('[TM] Rendering tag list. count =', this.tags.length);
-        this.tags.forEach(tag => {
+        
+        // Sadece kullanılan tag'ları filtrele
+        const usedTags = this.tags.filter(tag => tag.usage_count > 0);
+        console.log('[TM] Rendering used tags in main list. count =', usedTags.length);
+        usedTags.forEach(tag => {
             const tagElement = document.createElement('div');
             tagElement.className = 'tag-item';
             tagElement.id = `tag-${tag.id}`;

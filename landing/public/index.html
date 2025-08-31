@@ -20,31 +20,32 @@
 
     <!-- Tag Manager Section (shown when authenticated) -->
     <div id="tag-manager-section" class="tag-manager" style="display: none;">
-        <!-- Header with Title and Actions -->
+        <!-- Header with Centered Title -->
         <div class="page-header">
-            <div class="page-title-container">
-                <h1 class="page-title">Tag Manager</h1>
+            <h1 class="page-title centered">Tag Manager</h1>
+        </div>
+        
+        <!-- Top Widget Bar -->
+        <div class="top-widget-bar">
+            <!-- Dark Mode Toggle -->
+            <div class="dark-mode-toggle">
+                <span class="mode-label">☀️</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="mode-label">🌙</span>
             </div>
-            <div class="header-actions">
-                <!-- Dark Mode Toggle -->
-                <div class="dark-mode-toggle">
-                    <span class="mode-label">☀️</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()">
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="mode-label">🌙</span>
-                </div>
-                <!-- Toggle switch TR/EN -->
-                <div class="language-toggle">
-                    <span class="lang-label">TR</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="lang-toggle" onchange="toggleLanguage()">
-                        <span class="toggle-slider"></span>
-                    </label>
-                    <span class="lang-label">EN</span>
-                </div>
-                <div class="user-profile-container">
+            <!-- Toggle switch TR/EN -->
+            <div class="language-toggle">
+                <span class="lang-label">TR</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="lang-toggle" onchange="toggleLanguage()">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="lang-label">EN</span>
+            </div>
+            <div class="user-profile-container">
                     <div class="user-profile-trigger" id="user-profile-trigger">
                         <div class="user-avatar">
                             <span class="user-avatar-text" id="user-avatar-text">U</span>
@@ -73,7 +74,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
         
         <!-- Main Content Grid -->

@@ -144,11 +144,10 @@ body {
 /* Page Header Styles */
 .page-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
-    padding: 2rem 2.5rem 1.5rem 2.5rem;
+    padding: 2rem 2.5rem 1rem 2.5rem;
     background: var(--background);
-    border-radius: 0 0 var(--radius) var(--radius);
     border-bottom: 1px solid var(--border);
 }
 
@@ -157,6 +156,21 @@ body {
     font-weight: 700;
     color: var(--primary);
     margin: 0;
+}
+
+.page-title.centered {
+    text-align: center;
+}
+
+/* Top Widget Bar */
+.top-widget-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 0 2.5rem 1.5rem 2.5rem;
+    background: var(--background);
+    border-radius: 0 0 var(--radius) var(--radius);
+    gap: 1.5rem;
 }
 
 .tag-manager-header {
@@ -609,7 +623,13 @@ body {
         grid-row: auto !important;
     }
     .page-header {
-        padding: 1.2rem 1rem 1rem 1rem;
+        padding: 1.2rem 1rem 0.5rem 1rem;
+    }
+    .top-widget-bar {
+        padding: 0 1rem 1rem 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
     .page-title {
         font-size: 1.2rem;
