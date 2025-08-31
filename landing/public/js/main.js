@@ -1069,7 +1069,7 @@ class ClickUpTagManager {
         const newName = prompt('Enter new tag name:', currentName);
         console.log('[TM] New name entered:', newName);
         
-                if (newName && newName.trim() && newName.trim() !== currentName) {
+        if (newName && newName.trim() && newName.trim() !== currentName) {
             try {
                 const token = localStorage.getItem('clickup_access_token');
                 if (!token) {
@@ -1077,10 +1077,11 @@ class ClickUpTagManager {
                     return;
                 }
 
-                // Show loading in all 3 tabs
+                // Show loading in all areas including management section
                 this.showTabLoading('#tag-list');
                 this.showTabLoading('#tag-details');
                 this.showTabLoading('#tagged-items');
+                this.showManagementSectionLoading();
 
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'PUT',
@@ -1107,28 +1108,31 @@ class ClickUpTagManager {
                         this.tags[tagIndex].id = newName.trim();
                     }
                     
-                    // Re-render all tabs (no full page refresh)
+                    // Re-render all areas including management section
                     this.renderTagList();
                     this.renderTagDetails();
+                    await this.refreshCreatedTags();
                     
                 } else {
                     const errorData = await response.json();
                     console.error('[TM] Rename failed:', errorData);
                     
-                    // Hide tab loading
+                    // Hide all loading indicators
                     this.hideTabLoading('#tag-list');
                     this.hideTabLoading('#tag-details');
                     this.hideTabLoading('#tagged-items');
+                    this.hideManagementSectionLoading();
                     
                     alert(`❌ Failed to rename tag: ${errorData.message || errorData.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('[FE] Error renaming tag:', error);
                 
-                // Hide tab loading
+                // Hide all loading indicators
                 this.hideTabLoading('#tag-list');
                 this.hideTabLoading('#tag-details');
                 this.hideTabLoading('#tagged-items');
+                this.hideManagementSectionLoading();
                 
                 alert('❌ Failed to rename tag. Please try again.');
             }
@@ -1147,10 +1151,11 @@ class ClickUpTagManager {
                     return;
                 }
                 
-                // Show loading in all tabs
+                // Show loading in all areas including management section
                 this.showTabLoading('#tag-list');
                 this.showTabLoading('#tag-details');
                 this.showTabLoading('#tagged-items');
+                this.showManagementSectionLoading();
                 
                 const response = await fetch(`https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag/${tagId}`, {
                     method: 'DELETE',
@@ -1170,27 +1175,30 @@ class ClickUpTagManager {
                         this.selectedTag = null;
                     }
                     
-                    // Re-render all tabs
+                    // Re-render all areas including management section
                     this.renderTagList();
                     this.renderTagDetails();
+                    await this.refreshCreatedTags();
                     
                 } else {
                     const errorData = await response.json();
                     
-                    // Hide tab loading
+                    // Hide all loading indicators
                     this.hideTabLoading('#tag-list');
                     this.hideTabLoading('#tag-details');
                     this.hideTabLoading('#tagged-items');
+                    this.hideManagementSectionLoading();
                     
                     alert(`Failed to delete tag: ${errorData.error || 'Unknown error'}`);
                 }
             } catch (error) {
                 console.error('[FE] Error deleting tag:', error);
                 
-                // Hide tab loading
+                // Hide all loading indicators
                 this.hideTabLoading('#tag-list');
                 this.hideTabLoading('#tag-details');
                 this.hideTabLoading('#tagged-items');
+                this.hideManagementSectionLoading();
                 
                 alert('Failed to delete tag. Please try again.');
             }
@@ -1422,6 +1430,36 @@ class ClickUpTagManager {
         if (managementContainer) {
             managementContainer.style.display = 'none';
         }
+    }
+    
+    // Show loading in management section
+    showManagementSectionLoading() {
+        const usedTagsList = document.getElementById('used-tags-list');
+        const unusedTagsList = document.getElementById('unused-tags-list');
+        
+        if (usedTagsList) {
+            usedTagsList.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Updating tags...</div>
+                </div>
+            `;
+        }
+        
+        if (unusedTagsList) {
+            unusedTagsList.innerHTML = `
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">Updating tags...</div>
+                </div>
+            `;
+        }
+    }
+    
+    // Hide loading in management section
+    hideManagementSectionLoading() {
+        // This will be handled by refreshCreatedTags() which updates the content
+        console.log('[TM] Management section loading will be replaced by refreshCreatedTags()');
     }
 
     // Calculate and render statistics
@@ -1723,7 +1761,7 @@ class ClickUpTagManager {
         // Tag creation form
         this.initializeTagCreation();
         
-        // Load all tasks for the tasks section
+        // Load all tasks for the tasks section (only once)
         this.loadAllTasks();
         
         // Load and display created tags
@@ -1895,7 +1933,19 @@ class ClickUpTagManager {
             } else {
                 const error = await response.json();
                 console.error('Tag creation failed:', error);
-                alert(`Failed to create tag: ${error.error || error.message || 'Unknown error'}`);
+                console.error('Response status:', response.status);
+                console.error('Response statusText:', response.statusText);
+                
+                let errorMessage = 'Unknown error';
+                if (error.error) {
+                    errorMessage = error.error;
+                } else if (error.message) {
+                    errorMessage = error.message;
+                } else if (error.details) {
+                    errorMessage = JSON.stringify(error.details);
+                }
+                
+                alert(`Failed to create tag: ${errorMessage}`);
             }
         } catch (error) {
             console.error('Error creating tag:', error);
@@ -2035,6 +2085,9 @@ class ClickUpTagManager {
             
             this.renderAllTasks(allTasks);
             
+            // Update filter options based on actual task data
+            this.updateFilterOptions(allTasks);
+            
         } catch (error) {
             console.error('Error loading all tasks:', error);
             tasksGrid.innerHTML = '<div class="no-data-message">Error loading tasks</div>';
@@ -2093,25 +2146,84 @@ class ClickUpTagManager {
         const statusFilter = document.getElementById('task-status-filter');
         const priorityFilter = document.getElementById('task-priority-filter');
         
+        console.log('[TM] Initializing task filters with', tasks.length, 'tasks');
+        console.log('[TM] Status filter element:', statusFilter);
+        console.log('[TM] Priority filter element:', priorityFilter);
+        
         const applyFilters = () => {
             const statusValue = statusFilter?.value || 'all';
             const priorityValue = priorityFilter?.value || 'all';
             
+            console.log('[TM] Applying filters:', { statusValue, priorityValue });
+            
             const filteredTasks = tasks.filter(task => {
-                const statusMatch = statusValue === 'all' || task.status.toLowerCase().includes(statusValue);
-                const priorityMatch = priorityValue === 'all' || task.priority.toLowerCase() === priorityValue;
-                return statusMatch && priorityMatch;
+                // Status matching - more flexible
+                let statusMatch = false;
+                if (statusValue === 'all') {
+                    statusMatch = true;
+                } else {
+                    const taskStatus = task.status.toLowerCase().replace(/\s+/g, '-');
+                    const filterStatus = statusValue.toLowerCase();
+                    statusMatch = taskStatus.includes(filterStatus) || filterStatus.includes(taskStatus);
+                }
+                
+                // Priority matching - exact match with variations
+                let priorityMatch = false;
+                if (priorityValue === 'all') {
+                    priorityMatch = true;
+                } else {
+                    const taskPriority = task.priority.toLowerCase();
+                    const filterPriority = priorityValue.toLowerCase();
+                    priorityMatch = taskPriority === filterPriority || 
+                                   taskPriority.includes(filterPriority) || 
+                                   filterPriority.includes(taskPriority);
+                }
+                
+                const match = statusMatch && priorityMatch;
+                if (match) {
+                    console.log('[TM] Task matches filters:', { 
+                        title: task.title, 
+                        status: task.status, 
+                        priority: task.priority,
+                        statusMatch,
+                        priorityMatch 
+                    });
+                }
+                
+                return match;
             });
             
+            console.log('[TM] Filtered tasks count:', filteredTasks.length);
             this.renderFilteredTasks(filteredTasks);
         };
         
+        // Clear any existing event listeners and add new ones
         if (statusFilter) {
-            statusFilter.addEventListener('change', applyFilters);
+            // Clone the element to remove all event listeners
+            const newStatusFilter = statusFilter.cloneNode(true);
+            statusFilter.parentNode.replaceChild(newStatusFilter, statusFilter);
+            
+            // Add event listener to the new element
+            newStatusFilter.addEventListener('change', applyFilters);
+            console.log('[TM] Status filter event listener added');
+        } else {
+            console.error('[TM] Status filter element not found!');
         }
+        
         if (priorityFilter) {
-            priorityFilter.addEventListener('change', applyFilters);
+            // Clone the element to remove all event listeners
+            const newPriorityFilter = priorityFilter.cloneNode(true);
+            priorityFilter.parentNode.replaceChild(newPriorityFilter, priorityFilter);
+            
+            // Add event listener to the new element
+            newPriorityFilter.addEventListener('change', applyFilters);
+            console.log('[TM] Priority filter event listener added');
+        } else {
+            console.error('[TM] Priority filter element not found!');
         }
+        
+        // Store the applyFilters function for later use
+        this.currentTaskFilters = { applyFilters, tasks };
     }
     
     // Render filtered tasks
@@ -2159,6 +2271,46 @@ class ClickUpTagManager {
                 ` : ''}
             </div>
         `).join('');
+    }
+    
+    // Update filter options based on actual task data
+    updateFilterOptions(tasks) {
+        const mappedTasks = tasks.map(mapClickUpTaskToUI);
+        
+        // Get unique status values
+        const uniqueStatuses = [...new Set(mappedTasks.map(task => task.status))];
+        const uniquePriorities = [...new Set(mappedTasks.map(task => task.priority))];
+        
+        console.log('[TM] Unique statuses found:', uniqueStatuses);
+        console.log('[TM] Unique priorities found:', uniquePriorities);
+        
+        // Update status filter options
+        const statusFilter = document.getElementById('task-status-filter');
+        if (statusFilter) {
+            // Keep "All Status" option and add actual statuses
+            statusFilter.innerHTML = '<option value="all">All Status</option>';
+            uniqueStatuses.forEach(status => {
+                const option = document.createElement('option');
+                option.value = status.toLowerCase().replace(/\s+/g, '-');
+                option.textContent = status;
+                statusFilter.appendChild(option);
+            });
+        }
+        
+        // Update priority filter options
+        const priorityFilter = document.getElementById('task-priority-filter');
+        if (priorityFilter) {
+            // Keep "All Priority" option and add actual priorities
+            priorityFilter.innerHTML = '<option value="all">All Priority</option>';
+            uniquePriorities.forEach(priority => {
+                const option = document.createElement('option');
+                option.value = priority.toLowerCase();
+                option.textContent = priority;
+                priorityFilter.appendChild(option);
+            });
+        }
+        
+        console.log('[TM] Filter options updated successfully');
     }
 }
 

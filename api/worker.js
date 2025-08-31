@@ -542,10 +542,21 @@ export default {
         });
         
         if (!createTagResponse.ok) {
-          const errorData = await createTagResponse.json();
+          let errorData;
+          try {
+            errorData = await createTagResponse.json();
+          } catch (e) {
+            errorData = await createTagResponse.text();
+          }
+          
+          console.error(`[Worker] ClickUp API error:`, errorData);
+          console.error(`[Worker] Status: ${createTagResponse.status}`);
+          
           return new Response(JSON.stringify({ 
             error: 'Failed to create tag in ClickUp',
-            details: errorData
+            details: errorData,
+            status: createTagResponse.status,
+            statusText: createTagResponse.statusText
           }), {
             status: createTagResponse.status,
             headers: {
