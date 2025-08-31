@@ -1843,7 +1843,10 @@ class ClickUpTagManager {
         }
         
         // Convert RGB to hex if needed
-        const hexColor = this.rgbToHex(tagColor);
+        let hexColor = tagColor;
+        if (tagColor.startsWith('rgb')) {
+            hexColor = this.rgbToHex(tagColor);
+        }
         
         try {
             const token = localStorage.getItem('clickup_access_token');
@@ -1857,6 +1860,8 @@ class ClickUpTagManager {
             const originalText = createBtn.textContent;
             createBtn.disabled = true;
             createBtn.textContent = 'Creating...';
+            
+            console.log('Creating tag:', { name: tagName, color: hexColor });
             
             // Create tag via API
             const response = await fetch('https://tagmanager-api.alindakabadayi.workers.dev/api/clickup/tag', {
@@ -1873,6 +1878,7 @@ class ClickUpTagManager {
             
             if (response.ok) {
                 const result = await response.json();
+                console.log('Tag created successfully:', result);
                 
                 // Clear form
                 tagNameInput.value = '';
@@ -1883,12 +1889,13 @@ class ClickUpTagManager {
                 this.render();
                 
                 // Refresh created tags display
-                this.refreshCreatedTags();
+                await this.refreshCreatedTags();
                 
                 alert(`Tag "${tagName}" created successfully!`);
             } else {
                 const error = await response.json();
-                alert(`Failed to create tag: ${error.message || error.error || 'Unknown error'}`);
+                console.error('Tag creation failed:', error);
+                alert(`Failed to create tag: ${error.error || error.message || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error creating tag:', error);
@@ -1896,8 +1903,10 @@ class ClickUpTagManager {
         } finally {
             // Re-enable form
             const createBtn = document.querySelector('.btn-create-tag');
-            createBtn.disabled = false;
-            createBtn.textContent = 'Create Tag';
+            if (createBtn) {
+                createBtn.disabled = false;
+                createBtn.textContent = 'Create Tag';
+            }
         }
     }
     

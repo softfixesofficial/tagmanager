@@ -84,7 +84,7 @@ router.get('/user', async (req, res) => {
         console.log('[BE] Using team ID:', teamId);
         
         let userData = null;
-        let user = null;
+        let userInfo = null;
         
         // Try method 1: team users endpoint
         try {
@@ -135,24 +135,24 @@ router.get('/user', async (req, res) => {
         // Extract user information from the response
         console.log('[BE] Available keys in userData:', Object.keys(userData));
         
-        let user = null;
+        let extractedUser = null;
         
         // Try different possible response structures
         if (userData.members && userData.members.length > 0) {
-            user = userData.members[0].user || userData.members[0];
-            console.log('[BE] Found user in members:', user);
+            extractedUser = userData.members[0].user || userData.members[0];
+            console.log('[BE] Found user in members:', extractedUser);
         } else if (userData.users && userData.users.length > 0) {
-            user = userData.users[0].user || userData.users[0];
-            console.log('[BE] Found user in users:', user);
+            extractedUser = userData.users[0].user || userData.users[0];
+            console.log('[BE] Found user in users:', extractedUser);
         } else if (userData.user) {
-            user = userData.user;
-            console.log('[BE] Found user directly:', user);
+            extractedUser = userData.user;
+            console.log('[BE] Found user directly:', extractedUser);
         } else if (userData.member && userData.member.user) {
-            user = userData.member.user;
-            console.log('[BE] Found user in member:', user);
+            extractedUser = userData.member.user;
+            console.log('[BE] Found user in member:', extractedUser);
         }
         
-        if (!user) {
+        if (!extractedUser) {
             console.error('[BE] No user found in any expected location. Full response:', JSON.stringify(userData, null, 2));
             throw new Error('No user data found in response');
         }
@@ -160,16 +160,16 @@ router.get('/user', async (req, res) => {
         // Return clean user data
         const responseData = {
             user: {
-                id: user.id,
-                username: user.username || 'ClickUp User',
-                email: user.email || 'user@clickup.com',
-                profilePicture: user.profilePicture,
-                color: user.color,
-                initials: user.initials,
-                role: user.role || 3,
-                lastActive: user.last_active,
-                dateJoined: user.date_joined,
-                dateInvited: user.date_invited
+                id: extractedUser.id,
+                username: extractedUser.username || 'ClickUp User',
+                email: extractedUser.email || 'user@clickup.com',
+                profilePicture: extractedUser.profilePicture,
+                color: extractedUser.color,
+                initials: extractedUser.initials,
+                role: extractedUser.role || 3,
+                lastActive: extractedUser.last_active,
+                dateJoined: extractedUser.date_joined,
+                dateInvited: extractedUser.date_invited
             }
         };
         
@@ -512,6 +512,106 @@ router.put('/tag/:tagId', express.json(), async (req, res) => {
     } catch (err) {
         console.error('[BE] Error updating tag:', err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// Create new tag
+router.post('/tag', express.json(), async (req, res) => {
+    const { name, color } = req.body;
+    const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+    
+    if (!token) {
+        return res.status(401).json({ error: 'Access token is required' });
+    }
+    
+    if (!name || !name.trim()) {
+        return res.status(400).json({ error: 'Tag name is required' });
+    }
+    
+    try {
+        console.log(`[BE] Creating tag: ${name} with color: ${color}`);
+        
+        // First get user's workspaces to find the space
+        const workspacesResponse = await fetch('https://api.clickup.com/api/v2/team', {
+            headers: { 'Authorization': token }
+        });
+        
+        if (!workspacesResponse.ok) {
+            const errorData = await workspacesResponse.json();
+            return res.status(workspacesResponse.status).json({ 
+                error: 'Failed to get workspaces',
+                details: errorData
+            });
+        }
+        
+        const workspacesData = await workspacesResponse.json();
+        const teams = workspacesData.teams || [];
+        
+        if (teams.length === 0) {
+            return res.status(404).json({ error: 'No workspaces found' });
+        }
+        
+        // Get spaces from the first team
+        const teamId = teams[0].id;
+        const spacesResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/space`, {
+            headers: { 'Authorization': token }
+        });
+        
+        if (!spacesResponse.ok) {
+            const errorData = await spacesResponse.json();
+            return res.status(spacesResponse.status).json({ 
+                error: 'Failed to get spaces',
+                details: errorData
+            });
+        }
+        
+        const spacesData = await spacesResponse.json();
+        const spaces = spacesData.spaces || [];
+        
+        if (spaces.length === 0) {
+            return res.status(404).json({ error: 'No spaces found' });
+        }
+        
+        // Use the first space to create the tag
+        const spaceId = spaces[0].id;
+        
+        // Create tag in the space
+        const createTagResponse = await fetch(`https://api.clickup.com/api/v2/space/${spaceId}/tag`, {
+            method: 'POST',
+            headers: {
+                'Authorization': token,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                name: name.trim(),
+                tag_fg: color || '#ffffff',
+                tag_bg: color || '#4f8cff'
+            })
+        });
+        
+        if (!createTagResponse.ok) {
+            const errorData = await createTagResponse.json();
+            return res.status(createTagResponse.status).json({ 
+                error: 'Failed to create tag in ClickUp',
+                details: errorData
+            });
+        }
+        
+        const newTag = await createTagResponse.json();
+        console.log(`[BE] Tag created successfully: ${name}`);
+        
+        res.json({
+            success: true,
+            message: `Tag created successfully: ${name}`,
+            tag: newTag
+        });
+        
+    } catch (err) {
+        console.error('[BE] Error creating tag:', err);
+        res.status(500).json({ 
+            error: 'Internal server error',
+            details: err.message
+        });
     }
 });
 
