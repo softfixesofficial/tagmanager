@@ -195,7 +195,7 @@ export default {
             const listsData = await listsResponse.json();
             
             for (const list of listsData.lists || []) {
-              const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+              const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
                 headers: { 'Authorization': token }
               });
               const tasksData = await tasksResponse.json();
@@ -252,7 +252,7 @@ export default {
           const spaceListsData = await spaceListsResponse.json();
           
           for (const list of spaceListsData.lists || []) {
-            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task`, {
+            const tasksResponse = await fetch(`https://api.clickup.com/api/v2/list/${list.id}/task?include_closed=true`, {
               headers: { 'Authorization': token }
             });
             const tasksData = await tasksResponse.json();

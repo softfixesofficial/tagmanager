@@ -310,7 +310,7 @@ class ClickUpTagManager {
                 <div class="tagged-item" data-task-id="${item.id}">
                     <div class="item-header">
                         <div class="task-card-left">
-                            <button class="task-card-remove-btn" onclick="tagManager.removeAllTagsFromTask('${item.id}')" title="Remove all tags from this task">
+                            <button class="task-card-remove-btn" onclick="tagManager.removeTagFromTask('${item.id}', '${this.selectedTag.name}')" title="Remove this tag from task">
                                 ✕
                             </button>
                             <div class="task-card-path" data-task-id="${item.id}">Loading path...</div>

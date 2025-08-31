@@ -2247,12 +2247,16 @@ body {
 
 .donut-legend {
     position: absolute;
-    bottom: -30px;
+    bottom: -40px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
     gap: 1rem;
     font-size: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    text-align: center;
 }
 
 .donut-legend-item {
