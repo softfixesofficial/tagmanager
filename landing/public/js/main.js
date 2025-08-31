@@ -1766,6 +1766,10 @@ class ClickUpTagManager {
         
         // Load and display created tags
         this.refreshCreatedTags();
+        
+        // Initialize drag and drop for existing tags
+        this.initializeDragAndDrop('used-tags-list');
+        this.initializeDragAndDrop('unused-tags-list');
     }
     
     // Initialize tag creation functionality
@@ -1925,11 +1929,8 @@ class ClickUpTagManager {
                 // Show loading in management section
                 this.showManagementSectionLoading();
                 
-                // Refresh tags list from ClickUp
+                // Refresh tags list from ClickUp and update this.tags
                 await this.loadTagsFromClickUp();
-                
-                // Update the tags array with fresh data
-                this.tags = this.tags || [];
                 
                 // Render the main interface
                 this.render();
@@ -2114,7 +2115,11 @@ class ClickUpTagManager {
                 return;
             }
             
-            this.renderAllTasks(allTasks);
+            // Store tasks for filtering
+            this.allTasks = allTasks;
+            
+            // Render tasks with drag & drop support
+            this.renderFilteredTasks(allTasks.map(mapClickUpTaskToUI));
             
             // Update filter options based on actual task data
             this.updateFilterOptions(allTasks);
@@ -2125,52 +2130,7 @@ class ClickUpTagManager {
         }
     }
     
-    // Render all tasks in grid format
-    renderAllTasks(tasks) {
-        const tasksGrid = document.getElementById('all-tasks-grid');
-        if (!tasksGrid) return;
-        
-        const mappedTasks = tasks.map(mapClickUpTaskToUI);
-        
-        tasksGrid.innerHTML = mappedTasks.map(task => `
-            <div class="task-card">
-                <div class="task-card-header">
-                    <div class="task-card-id">${task.displayId || task.id}</div>
-                    <div class="task-card-badges">
-                        <div class="task-badge priority-${task.priority.toLowerCase()}">${task.priority}</div>
-                        <div class="task-badge status-${task.status.toLowerCase().replace(' ', '-')}">${task.status}</div>
-                    </div>
-                </div>
-                <div class="task-card-title">${task.title}</div>
-                <div class="task-card-meta">
-                    ${task.assignee && task.assignee !== 'Unassigned' ? `
-                        <div class="task-meta-item">
-                            <span>👤</span>
-                            <span>${task.assignee}</span>
-                        </div>
-                    ` : ''}
-                    ${task.dueDate && task.dueDate !== 'No due date' ? `
-                        <div class="task-meta-item">
-                            <span>📅</span>
-                            <span>${task.dueDate}</span>
-                        </div>
-                    ` : ''}
-                    <div class="task-meta-item">
-                        <span>👨‍💼</span>
-                        <span>${task.creator || 'Unknown'}</span>
-                    </div>
-                </div>
-                ${task.tags && task.tags.length > 0 ? `
-                    <div class="task-tags">
-                        ${task.tags.map(tag => `<div class="task-tag">${tag.name}</div>`).join('')}
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
-        
-        // Add filter functionality
-        this.initializeTaskFilters(mappedTasks);
-    }
+
     
     // Initialize task filters
     initializeTaskFilters(tasks) {
@@ -2255,7 +2215,7 @@ class ClickUpTagManager {
         
         // Clear any existing event listeners and add new ones
         if (statusFilter) {
-            // Clone the element to remove all event listeners
+            // Remove existing event listeners by cloning
             const newStatusFilter = statusFilter.cloneNode(true);
             statusFilter.parentNode.replaceChild(newStatusFilter, statusFilter);
             
@@ -2267,7 +2227,7 @@ class ClickUpTagManager {
         }
         
         if (priorityFilter) {
-            // Clone the element to remove all event listeners
+            // Remove existing event listeners by cloning
             const newPriorityFilter = priorityFilter.cloneNode(true);
             priorityFilter.parentNode.replaceChild(newPriorityFilter, priorityFilter);
             
@@ -2611,6 +2571,9 @@ class ClickUpTagManager {
         }
         
         console.log('[TM] Filter options updated successfully');
+        
+        // Re-initialize filters after updating options
+        this.initializeTaskFilters(mappedTasks);
     }
 }
 
