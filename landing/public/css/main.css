@@ -211,21 +211,7 @@ body {
     transform: translateX(30px);
 }
 
-.uk-flag {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 20px;
-    height: 12px;
-    background: 
-        linear-gradient(45deg, transparent 30%, #012169 30%, #012169 35%, transparent 35%),
-        linear-gradient(-45deg, transparent 30%, #012169 30%, #012169 35%, transparent 35%),
-        linear-gradient(0deg, #ffffff 0%, #ffffff 33%, #c8102e 33%, #c8102e 66%, #012169 66%, #012169 100%);
-    background-size: 100% 100%, 100% 100%, 100% 100%;
-    border-radius: 2px;
-    opacity: 0.8;
-}
+
 
 /* User Profile Styles */
 .user-profile-container {

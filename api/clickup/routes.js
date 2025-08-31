@@ -16,6 +16,41 @@ router.get('/login', (req, res) => {
     res.json({ url });
 });
 
+// Debug endpoint for testing
+router.get('/debug/user', async (req, res) => {
+    const token = req.query.token;
+    if (!token) {
+        return res.json({ 
+            error: 'No token provided',
+            usage: 'Add ?token=YOUR_TOKEN to test user endpoint'
+        });
+    }
+    
+    try {
+        // Test direct user endpoint
+        const userResponse = await fetch('https://api.clickup.com/api/v2/user', {
+            headers: { 
+                'Authorization': token,
+                'accept': 'application/json'
+            }
+        });
+        
+        const userData = await userResponse.json();
+        
+        res.json({
+            status: userResponse.status,
+            ok: userResponse.ok,
+            data: userData,
+            message: userResponse.ok ? 'Success' : 'Failed'
+        });
+    } catch (error) {
+        res.json({
+            error: error.message,
+            message: 'Request failed'
+        });
+    }
+});
+
 // Get user information
 router.get('/user', async (req, res) => {
     const token = req.query.token;
@@ -48,30 +83,79 @@ router.get('/user', async (req, res) => {
         const teamId = teamsData.teams[0].id;
         console.log('[BE] Using team ID:', teamId);
         
-        // Now get user data with team ID
-        const userResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/user?include_shared=false`, {
-            headers: { 
-                'Authorization': token,
-                'accept': 'application/json'
-            }
-        });
+        let userData = null;
+        let user = null;
         
-        if (!userResponse.ok) {
-            const errorText = await userResponse.text();
-            console.error('[BE] User API error:', userResponse.status, errorText);
-            throw new Error(`User API failed: ${userResponse.status} - ${errorText}`);
+        // Try method 1: team users endpoint
+        try {
+            console.log('[BE] Trying team users endpoint...');
+            const userResponse = await fetch(`https://api.clickup.com/api/v2/team/${teamId}/user?include_shared=false`, {
+                headers: { 
+                    'Authorization': token,
+                    'accept': 'application/json'
+                }
+            });
+            
+            if (userResponse.ok) {
+                userData = await userResponse.json();
+                console.log('[BE] Team users response:', JSON.stringify(userData, null, 2));
+            } else {
+                console.log('[BE] Team users endpoint failed:', userResponse.status);
+            }
+        } catch (error) {
+            console.log('[BE] Team users endpoint error:', error.message);
         }
         
-        const userData = await userResponse.json();
-        console.log('[BE] Raw ClickUp user data:', JSON.stringify(userData, null, 2));
+        // Try method 2: direct user endpoint if first failed
+        if (!userData) {
+            try {
+                console.log('[BE] Trying direct user endpoint...');
+                const directUserResponse = await fetch('https://api.clickup.com/api/v2/user', {
+                    headers: { 
+                        'Authorization': token,
+                        'accept': 'application/json'
+                    }
+                });
+                
+                if (directUserResponse.ok) {
+                    userData = await directUserResponse.json();
+                    console.log('[BE] Direct user response:', JSON.stringify(userData, null, 2));
+                } else {
+                    console.log('[BE] Direct user endpoint failed:', directUserResponse.status);
+                }
+            } catch (error) {
+                console.log('[BE] Direct user endpoint error:', error.message);
+            }
+        }
+        
+        if (!userData) {
+            throw new Error('Both user endpoints failed');
+        }
         
         // Extract user information from the response
-        const users = userData.members || userData.users || [];
-        if (users.length === 0) {
-            throw new Error('No user data found in response');
+        console.log('[BE] Available keys in userData:', Object.keys(userData));
+        
+        let user = null;
+        
+        // Try different possible response structures
+        if (userData.members && userData.members.length > 0) {
+            user = userData.members[0].user || userData.members[0];
+            console.log('[BE] Found user in members:', user);
+        } else if (userData.users && userData.users.length > 0) {
+            user = userData.users[0].user || userData.users[0];
+            console.log('[BE] Found user in users:', user);
+        } else if (userData.user) {
+            user = userData.user;
+            console.log('[BE] Found user directly:', user);
+        } else if (userData.member && userData.member.user) {
+            user = userData.member.user;
+            console.log('[BE] Found user in member:', user);
         }
         
-        const user = users[0].user || users[0];
+        if (!user) {
+            console.error('[BE] No user found in any expected location. Full response:', JSON.stringify(userData, null, 2));
+            throw new Error('No user data found in response');
+        }
         
         // Return clean user data
         const responseData = {

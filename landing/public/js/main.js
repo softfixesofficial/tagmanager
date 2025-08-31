@@ -1292,9 +1292,11 @@ class ClickUpTagManager {
             console.log('[TM] User data received:', data);
             
             if (data.user) {
+                console.log('[TM] User profile found:', data.user);
                 this.updateUserProfile(data);
             } else {
-                throw new Error('No user data in response');
+                console.error('[TM] No user data in response. Full response:', data);
+                throw new Error('No user data in response: ' + JSON.stringify(data));
             }
             
         } catch (error) {
