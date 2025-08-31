@@ -1922,12 +1922,23 @@ class ClickUpTagManager {
                 tagNameInput.value = '';
                 this.updateSelectedColor('#4f8cff');
                 
-                // Refresh tags list
+                // Show loading in management section
+                this.showManagementSectionLoading();
+                
+                // Refresh tags list from ClickUp
                 await this.loadTagsFromClickUp();
+                
+                // Update the tags array with fresh data
+                this.tags = this.tags || [];
+                
+                // Render the main interface
                 this.render();
                 
                 // Refresh created tags display
                 await this.refreshCreatedTags();
+                
+                // Hide loading after refresh
+                this.hideManagementSectionLoading();
                 
                 alert(`Tag "${tagName}" created successfully!`);
             } else {
@@ -1984,11 +1995,21 @@ class ClickUpTagManager {
             const usedTags = [];
             const unusedTags = [];
             
+            console.log('[TM] Checking tag usage for', this.tags.length, 'tags');
+            console.log('[TM] Available tasks:', allTasks.length);
+            
             // Check each tag to see if it's used in any task
             this.tags.forEach(tag => {
+                const tagName = tag.name || tag.tag_name || tag.id;
                 const isUsed = allTasks.some(task => 
-                    task.tags && task.tags.some(taskTag => taskTag.name === tag.id || taskTag.name === tag.name)
+                    task.tags && task.tags.some(taskTag => 
+                        taskTag.name === tagName || 
+                        taskTag.name === tag.id || 
+                        taskTag.name === tag.name
+                    )
                 );
+                
+                console.log(`[TM] Tag "${tagName}" - Used: ${isUsed}`);
                 
                 if (isUsed) {
                     usedTags.push(tag);
@@ -2023,23 +2044,30 @@ class ClickUpTagManager {
         }
         
         container.innerHTML = tags.map(tag => {
+            const tagName = tag.name || tag.tag_name || tag.id;
+            const tagId = tag.id || tag.tag_id;
+            
             // Count actual usage
             const usageCount = allTasks.filter(task => 
-                task.tags && task.tags.some(taskTag => taskTag.name === tag.id || taskTag.name === tag.name)
+                task.tags && task.tags.some(taskTag => 
+                    taskTag.name === tagName || 
+                    taskTag.name === tag.id || 
+                    taskTag.name === tag.name
+                )
             ).length;
             
             return `
                 <div class="created-tag-item">
                     <div class="created-tag-info">
                         <div class="created-tag-color" style="background-color: ${tag.tag_bg || tag.color || '#4f8cff'}"></div>
-                        <div class="created-tag-name">${tag.name}</div>
+                        <div class="created-tag-name">${tagName}</div>
                         <div class="created-tag-usage">${usageCount} tasks</div>
                     </div>
                     <div class="created-tag-actions">
-                        <button class="tag-action-btn edit" onclick="tagManager.editTag('${tag.id}', '${tag.name}')" title="Edit tag">
+                        <button class="tag-action-btn edit" onclick="tagManager.editTag('${tagId}', '${tagName}')" title="Edit tag">
                             ✏️
                         </button>
-                        <button class="tag-action-btn delete" onclick="tagManager.deleteTag('${tag.id}', '${tag.name}')" title="Delete tag">
+                        <button class="tag-action-btn delete" onclick="tagManager.deleteTag('${tagId}', '${tagName}')" title="Delete tag">
                             🗑️
                         </button>
                     </div>
@@ -2199,21 +2227,27 @@ class ClickUpTagManager {
         
         // Enhanced filter function with loading
         const applyFiltersWithLoading = () => {
+            console.log('[TM] Filtering with loading...');
+            
             // Show loading in tasks grid
             const tasksGrid = document.getElementById('all-tasks-grid');
             if (tasksGrid) {
+                console.log('[TM] Showing loading in tasks grid');
                 tasksGrid.innerHTML = `
                     <div class="loading-container">
                         <div class="loading-spinner"></div>
                         <div class="loading-text">Filtering tasks...</div>
                     </div>
                 `;
+            } else {
+                console.error('[TM] all-tasks-grid element not found!');
             }
             
             // Apply filters after a short delay to show loading
             setTimeout(() => {
+                console.log('[TM] Applying filters...');
                 applyFilters();
-            }, 200);
+            }, 300);
         };
         
         // Clear any existing event listeners and add new ones
@@ -2224,7 +2258,7 @@ class ClickUpTagManager {
             
             // Add event listener to the new element
             newStatusFilter.addEventListener('change', applyFiltersWithLoading);
-            console.log('[TM] Status filter event listener added');
+            console.log('[TM] Status filter event listener added with loading');
         } else {
             console.error('[TM] Status filter element not found!');
         }
@@ -2236,7 +2270,7 @@ class ClickUpTagManager {
             
             // Add event listener to the new element
             newPriorityFilter.addEventListener('change', applyFiltersWithLoading);
-            console.log('[TM] Priority filter event listener added');
+            console.log('[TM] Priority filter event listener added with loading');
         } else {
             console.error('[TM] Priority filter element not found!');
         }
