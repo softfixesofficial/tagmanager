@@ -2728,9 +2728,10 @@ body {
 
 .task-filter-select {
     padding: 0.5rem 1rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border);
     border-radius: 6px;
-    background: white;
+    background: var(--card-bg);
+    color: var(--text-primary);
     font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -2738,8 +2739,8 @@ body {
 
 .task-filter-select:focus {
     outline: none;
-    border-color: #4f8cff;
-    box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .all-tasks-grid {
@@ -2837,7 +2838,7 @@ body {
 
 .task-badge.priority-urgent { background: #1f2937; color: #fca5a5; }
 .task-badge.priority-high { background: #1f2937; color: #fcd34d; }
-.task-badge.priority-medium { background: #1f2937; color: #86efac; }
+.task-badge.priority-medium { background: #1f2937; color: #93c5fd; }
 .task-badge.priority-low { background: var(--panel-background); color: var(--text-secondary); }
 
 .task-badge.status-completed { background: #1f2937; color: #86efac; }
