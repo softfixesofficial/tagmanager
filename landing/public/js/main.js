@@ -169,6 +169,20 @@ class ClickUpTagManager {
         this.groups = [{ name: 'All', open: true }];
         this.activeFilter = {};
         this.tags = [];
+        this.allTasks = [];
+        this.isRemovingTag = false;
+        
+        // Performance optimizations
+        this.cache = {
+            tags: null,
+            tasks: null,
+            userProfile: null,
+            lastUpdate: null
+        };
+        this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+        this.debounceTimers = {};
+        this.isLoading = false;
+        
         console.log('[TM] Constructed ClickUpTagManager with containerId =', containerId, 'container exists =', !!this.container);
         this.initialize();
     }
@@ -296,9 +310,84 @@ class ClickUpTagManager {
         
         setTimeout(() => errorDiv.remove(), 5000);
     }
+    
+    // Get creator display name with fallbacks
+    getCreatorDisplayName(tag) {
+        if (!tag) return 'Unknown';
+        
+        // Priority order: creator_name > creator_id > fallback
+        if (tag.creator_name && tag.creator_name !== 'null' && tag.creator_name !== 'undefined') {
+            return tag.creator_name;
+        }
+        
+        if (tag.creator_id && tag.creator_id !== 'null' && tag.creator_id !== 'undefined') {
+            return `User ${tag.creator_id}`;
+        }
+        
+        // Try to get from task creator if available
+        if (tag.task_creator) {
+            return tag.task_creator;
+        }
+        
+        return 'Unknown Creator';
+    }
+    
+    // Cache management helpers
+    isCacheValid(key) {
+        const cacheItem = this.cache[key];
+        if (!cacheItem || !cacheItem.timestamp) return false;
+        
+        const now = Date.now();
+        return (now - cacheItem.timestamp) < this.cacheTimeout;
+    }
+    
+    setCache(key, data) {
+        this.cache[key] = {
+            data: data,
+            timestamp: Date.now()
+        };
+    }
+    
+    getCache(key) {
+        if (this.isCacheValid(key)) {
+            return this.cache[key].data;
+        }
+        return null;
+    }
+    
+    clearCache(key = null) {
+        if (key) {
+            delete this.cache[key];
+        } else {
+            this.cache = {
+                tags: null,
+                tasks: null,
+                userProfile: null,
+                lastUpdate: null
+            };
+        }
+    }
+    
+    // Debounce helper for performance
+    debounce(func, wait) {
+        return (...args) => {
+            clearTimeout(this.debounceTimers[func.name]);
+            this.debounceTimers[func.name] = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
 
-    async loadTagsFromClickUp() {
-        console.log('[TM] Loading tags from ClickUp...');
+    async loadTagsFromClickUp(forceRefresh = false) {
+        console.log('[TM] Loading tags from ClickUp...', { forceRefresh });
+        
+        // Check cache first
+        if (!forceRefresh) {
+            const cachedTags = this.getCache('tags');
+            if (cachedTags) {
+                console.log('[TM] Using cached tags');
+                this.tags = cachedTags;
+                return;
+            }
+        }
         
         // Show loading state
         this.showLoading();
@@ -314,12 +403,17 @@ class ClickUpTagManager {
             const tags = await this.fetchTagsWithRetry(token);
             
             // Process and store tags
-            this.tags = this.processTags(tags);
+            const processedTags = this.processTags(tags);
+            this.tags = processedTags;
+            
+            // Cache the results
+            this.setCache('tags', processedTags);
             
             console.log('[TM] Tags loaded successfully:', {
                 total: this.tags.length,
                 used: this.tags.filter(tag => tag.usage_count > 0).length,
-                unused: this.tags.filter(tag => tag.usage_count === 0).length
+                unused: this.tags.filter(tag => tag.usage_count === 0).length,
+                cached: !forceRefresh
             });
             
         } catch (error) {
@@ -532,7 +626,7 @@ class ClickUpTagManager {
                         </div>
                         <div class="tag-meta-item">
                             <span>👤</span>
-                            <span>${this.selectedTag.creator_name || this.selectedTag.creator_id || 'Unknown'}</span>
+                            <span>${this.getCreatorDisplayName(this.selectedTag)}</span>
                         </div>
                     </div>
                 </div>
@@ -616,8 +710,10 @@ class ClickUpTagManager {
         const clearFilter = this.container.querySelector('#clear-filter');
         
         if (searchInput) {
+            // Debounced search for better performance
+            const debouncedFilter = this.debounce(this.filterTags.bind(this), 300);
             searchInput.addEventListener('input', (e) => {
-                this.filterTags(e.target.value);
+                debouncedFilter(e.target.value);
             });
         }
         
@@ -2359,10 +2455,22 @@ class ClickUpTagManager {
         this.initializeDragAndDrop(containerId);
     }
     
-    // Load all tasks for the tasks tab
-    async loadAllTasks() {
+    // Load all tasks for the tasks tab with caching
+    async loadAllTasks(forceRefresh = false) {
         const tasksGrid = document.getElementById('all-tasks-grid');
         if (!tasksGrid) return;
+        
+        // Check cache first
+        if (!forceRefresh) {
+            const cachedTasks = this.getCache('tasks');
+            if (cachedTasks) {
+                console.log('[TM] Using cached tasks');
+                this.allTasks = cachedTasks;
+                this.renderFilteredTasks(cachedTasks.map(mapClickUpTaskToUI));
+                this.updateFilterOptions(cachedTasks);
+                return;
+            }
+        }
         
         // Show loading
         tasksGrid.innerHTML = `
@@ -2389,21 +2497,16 @@ class ClickUpTagManager {
             const data = await response.json();
             const allTasks = data.tasks || [];
             
-            console.log('[TM] All tasks loaded:', allTasks.length);
-            console.log('[TM] Task statuses:', allTasks.map(task => ({
-                id: task.id,
-                name: task.name,
-                status: task.status,
-                normalizedStatus: normalizeTaskStatus(task.status)
-            })));
+            console.log('[TM] All tasks loaded:', allTasks.length, { cached: !forceRefresh });
             
             if (allTasks.length === 0) {
                 tasksGrid.innerHTML = '<div class="no-data-message">No tasks found</div>';
                 return;
             }
             
-            // Store tasks for filtering
+            // Store tasks for filtering and cache
             this.allTasks = allTasks;
+            this.setCache('tasks', allTasks);
             
             // Render tasks with drag & drop support
             this.renderFilteredTasks(allTasks.map(mapClickUpTaskToUI));

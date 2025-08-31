@@ -1,0 +1,15 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="#4f8cff" stroke="#3b7de9" stroke-width="2"/>
+  
+  <!-- Tag icon -->
+  <path d="M8 8h8l8 8-8 8H8V8z" fill="white"/>
+  
+  <!-- Tag hole -->
+  <circle cx="12" cy="12" r="2" fill="#4f8cff"/>
+  
+  <!-- Tag lines -->
+  <path d="M10 16h4" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M10 19h6" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M10 13h2" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

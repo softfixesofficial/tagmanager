@@ -268,16 +268,25 @@ export default {
                   const latestTagInfo = spaceTagInfo || tag;
                   
                   if (!existingTag) {
+                    // Try to get tag creator info from space tags
+                    let tagCreatorInfo = { creator_id: null, creator_name: null };
+                    if (spaceTagInfo && spaceTagInfo.creator) {
+                      tagCreatorInfo = {
+                        creator_id: spaceTagInfo.creator.id || null,
+                        creator_name: spaceTagInfo.creator.username || spaceTagInfo.creator.name || null
+                      };
+                    }
+                    
                     const tagData = {
                       ...latestTagInfo, // Use latest color info
                       id: tagId,
                       list_id: list.id,
                       space_id: space.id,
                       folder_id: null,
-                      creator_id: task.creator?.id || null,
-                      creator_name: task.creator?.username || null,
+                      creator_id: tagCreatorInfo.creator_id || task.creator?.id || null,
+                      creator_name: tagCreatorInfo.creator_name || task.creator?.username || null,
                       created_date: task.date_created,
-                                              usage_count: 1,
+                      usage_count: 1,
                       workspace_id: task.workspace_id || null,
                       chain_id: task.chain_id || null,
                       userid: task.userid || null,
